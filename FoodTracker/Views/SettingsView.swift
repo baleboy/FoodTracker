@@ -1,0 +1,125 @@
+//
+//  SettingsView.swift
+//  FoodTracker
+//
+
+import SwiftUI
+
+struct SettingsView: View {
+    @Environment(\.dismiss) private var dismiss
+    @State private var selectedProvider = APIKeyManager.shared.selectedProvider
+    @State private var claudeKey = ""
+    @State private var openAIKey = ""
+    @State private var hasClaudeKey = APIKeyManager.shared.hasAPIKey(for: .claude)
+    @State private var hasOpenAIKey = APIKeyManager.shared.hasAPIKey(for: .openAI)
+    @State private var showingSaveConfirmation = false
+    @State private var saveError = false
+
+    var body: some View {
+        Form {
+            Section("AI Provider") {
+                Picker("Provider", selection: $selectedProvider) {
+                    ForEach(LLMProvider.allCases, id: \.self) { provider in
+                        Text(provider.rawValue).tag(provider)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .onChange(of: selectedProvider) { _, newValue in
+                    APIKeyManager.shared.selectedProvider = newValue
+                }
+            }
+
+            Section("Claude API Key") {
+                APIKeyRow(
+                    provider: .claude,
+                    apiKey: $claudeKey,
+                    hasKey: $hasClaudeKey,
+                    showingSaveConfirmation: $showingSaveConfirmation,
+                    saveError: $saveError
+                )
+            }
+
+            Section {
+                Link(
+                    "Get Claude API Key",
+                    destination: URL(string: "https://console.anthropic.com/")!
+                )
+            }
+
+            Section("OpenAI API Key") {
+                APIKeyRow(
+                    provider: .openAI,
+                    apiKey: $openAIKey,
+                    hasKey: $hasOpenAIKey,
+                    showingSaveConfirmation: $showingSaveConfirmation,
+                    saveError: $saveError
+                )
+            }
+
+            Section {
+                Link(
+                    "Get OpenAI API Key",
+                    destination: URL(string: "https://platform.openai.com/api-keys")!
+                )
+            }
+        }
+        .toolbar {
+            ToolbarItem(placement: .confirmationAction) {
+                Button("Done") { dismiss() }
+            }
+        }
+        .alert("API Key Saved", isPresented: $showingSaveConfirmation) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Your API key has been securely saved.")
+        }
+        .alert("Save Failed", isPresented: $saveError) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text("Failed to save API key to Keychain.")
+        }
+    }
+}
+
+struct APIKeyRow: View {
+    let provider: LLMProvider
+    @Binding var apiKey: String
+    @Binding var hasKey: Bool
+    @Binding var showingSaveConfirmation: Bool
+    @Binding var saveError: Bool
+
+    var body: some View {
+        if hasKey {
+            HStack {
+                Text("API Key")
+                Spacer()
+                Text("Configured")
+                    .foregroundStyle(.green)
+            }
+
+            Button("Update API Key") {
+                hasKey = false
+                apiKey = ""
+            }
+        } else {
+            SecureField("Enter your API key", text: $apiKey)
+                .textContentType(.password)
+                .autocorrectionDisabled()
+
+            Button("Save") {
+                if APIKeyManager.shared.saveAPIKey(apiKey, for: provider) {
+                    hasKey = true
+                    apiKey = ""
+                    showingSaveConfirmation = true
+                } else {
+                    saveError = true
+                }
+            }
+            .disabled(apiKey.isEmpty)
+        }
+    }
+}
+
+#Preview {
+    SettingsView()
+}
