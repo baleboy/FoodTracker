@@ -6,16 +6,30 @@
 //
 
 import SwiftUI
+import SwiftData
 
 struct ContentView: View {
+    @Query(sort: \Meal.timestamp, order: .reverse) private var meals: [Meal]
     @State private var showingSettings = false
     @State private var showingPhotoCapture = false
     @State private var selectedMeal: Meal?
 
+    private var lastMealTimestamp: Date? {
+        meals.first?.timestamp
+    }
+
     var body: some View {
         NavigationStack {
-            MealListView()
-                .toolbar {
+            VStack(spacing: 0) {
+                FastingTimerView(lastMealTimestamp: lastMealTimestamp)
+                    .padding(.horizontal)
+                    .padding(.vertical, 8)
+                    .frame(maxWidth: .infinity)
+                    .background(Color(.systemGroupedBackground))
+
+                MealListView()
+            }
+            .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         Button(action: { showingSettings = true }) {
                             Label("Settings", systemImage: "gear")

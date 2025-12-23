@@ -14,9 +14,26 @@ struct SettingsView: View {
     @State private var hasOpenAIKey = APIKeyManager.shared.hasAPIKey(for: .openAI)
     @State private var showingSaveConfirmation = false
     @State private var saveError = false
+    @ObservedObject private var fastingSettings = FastingSettings.shared
 
     var body: some View {
         Form {
+            Section("Fasting") {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Minimum Fast Duration")
+                    Text("Only gaps of \(Int(fastingSettings.minimumThresholdHours)) hours or more count as fasts")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+
+                Stepper(
+                    "\(Int(fastingSettings.minimumThresholdHours)) hours",
+                    value: $fastingSettings.minimumThresholdHours,
+                    in: 1...24,
+                    step: 1
+                )
+            }
+
             Section("AI Provider") {
                 Picker("Provider", selection: $selectedProvider) {
                     ForEach(LLMProvider.allCases, id: \.self) { provider in

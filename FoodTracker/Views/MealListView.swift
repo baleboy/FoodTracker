@@ -58,9 +58,23 @@ struct MealListView: View {
 struct DaySectionHeader: View {
     let date: Date
     let meals: [Meal]
+    @ObservedObject private var fastingSettings = FastingSettings.shared
 
     private var totalCalories: Int {
         meals.reduce(0) { $0 + $1.calorieEstimate }
+    }
+
+    private var fastingStats: (total: Double, longest: TimeInterval?)? {
+        guard meals.count > 1 else { return nil }
+        let total = FastingCalculator.totalFastingHours(
+            for: meals,
+            minimumThreshold: fastingSettings.minimumThresholdSeconds
+        )
+        let longest = FastingCalculator.longestFast(
+            for: meals,
+            minimumThreshold: fastingSettings.minimumThresholdSeconds
+        )
+        return (total, longest)
     }
 
     private var dateText: String {
@@ -74,11 +88,24 @@ struct DaySectionHeader: View {
     }
 
     var body: some View {
-        HStack {
-            Text(dateText)
-            Spacer()
-            Text("\(totalCalories) cal")
-                .fontWeight(.semibold)
+        VStack(alignment: .leading, spacing: 2) {
+            HStack {
+                Text(dateText)
+                Spacer()
+                Text("\(totalCalories) cal")
+                    .fontWeight(.semibold)
+            }
+
+            if let stats = fastingStats, stats.total > 0 {
+                HStack(spacing: 4) {
+                    Text("Fasted: \(String(format: "%.1f", stats.total))h")
+                    if let longest = stats.longest {
+                        Text("(longest: \(FastingCalculator.formatDuration(longest)))")
+                    }
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
+            }
         }
     }
 }
