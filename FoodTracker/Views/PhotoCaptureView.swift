@@ -13,6 +13,7 @@ struct PhotoCaptureView: View {
 
     @StateObject private var cameraService = CameraService()
     @State private var selectedImageData: Data?
+    @State private var captureDate: Date?
     @State private var isAnalyzing = false
     @State private var errorMessage: String?
     @State private var selectedItem: PhotosPickerItem?
@@ -91,6 +92,7 @@ struct PhotoCaptureView: View {
                 Task {
                     if let data = try? await newItem?.loadTransferable(type: Data.self) {
                         selectedImageData = data
+                        captureDate = ImageHelpers.extractCaptureDate(from: data)
                         errorMessage = nil
                         await analyzeMeal()
                     }
@@ -127,7 +129,8 @@ struct PhotoCaptureView: View {
                 photoData: imageData,
                 calorieEstimate: result.calorieEstimate,
                 rating: rating,
-                foodName: result.foodName
+                foodName: result.foodName,
+                timestamp: captureDate ?? Date()
             )
 
             modelContext.insert(meal)

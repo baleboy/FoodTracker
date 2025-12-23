@@ -4,6 +4,7 @@
 //
 
 import UIKit
+import ImageIO
 
 enum ImageHelpers {
     static func resizeAndCompress(
@@ -23,5 +24,19 @@ enum ImageHelpers {
         }
 
         return resizedImage.jpegData(compressionQuality: quality)
+    }
+
+    static func extractCaptureDate(from imageData: Data) -> Date? {
+        guard let source = CGImageSourceCreateWithData(imageData as CFData, nil),
+              let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any],
+              let exif = properties[kCGImagePropertyExifDictionary as String] as? [String: Any],
+              let dateString = exif[kCGImagePropertyExifDateTimeOriginal as String] as? String
+        else {
+            return nil
+        }
+
+        let formatter = DateFormatter()
+        formatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
+        return formatter.date(from: dateString)
     }
 }
