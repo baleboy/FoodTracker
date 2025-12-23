@@ -12,24 +12,25 @@ struct ContentView: View {
     @Query(sort: \Meal.timestamp, order: .reverse) private var meals: [Meal]
     @State private var showingSettings = false
     @State private var showingPhotoCapture = false
-    @State private var selectedMeal: Meal?
+    @State private var selectedTab = 0
 
     private var lastMealTimestamp: Date? {
         meals.first?.timestamp
     }
 
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                FastingTimerView(lastMealTimestamp: lastMealTimestamp)
-                    .padding(.horizontal)
-                    .padding(.vertical, 8)
-                    .frame(maxWidth: .infinity)
-                    .background(Color(.systemGroupedBackground))
+        TabView(selection: $selectedTab) {
+            NavigationStack {
+                VStack(spacing: 0) {
+                    FastingTimerView(lastMealTimestamp: lastMealTimestamp)
+                        .padding(.horizontal)
+                        .padding(.vertical, 8)
+                        .frame(maxWidth: .infinity)
+                        .background(Color(.systemGroupedBackground))
 
-                MealListView()
-            }
-            .toolbar {
+                    MealListView()
+                }
+                .toolbar {
                     ToolbarItem(placement: .topBarLeading) {
                         Button(action: { showingSettings = true }) {
                             Label("Settings", systemImage: "gear")
@@ -44,6 +45,26 @@ struct ContentView: View {
                 .navigationDestination(for: Meal.self) { meal in
                     MealDetailView(meal: meal)
                 }
+            }
+            .tabItem {
+                Label("Meals", systemImage: "fork.knife")
+            }
+            .tag(0)
+
+            NavigationStack {
+                StatsView()
+                    .toolbar {
+                        ToolbarItem(placement: .topBarLeading) {
+                            Button(action: { showingSettings = true }) {
+                                Label("Settings", systemImage: "gear")
+                            }
+                        }
+                    }
+            }
+            .tabItem {
+                Label("Stats", systemImage: "chart.bar")
+            }
+            .tag(1)
         }
         .sheet(isPresented: $showingPhotoCapture) {
             PhotoCaptureView()

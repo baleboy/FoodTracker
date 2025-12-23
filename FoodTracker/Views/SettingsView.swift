@@ -34,6 +34,25 @@ struct SettingsView: View {
                 )
             }
 
+            Section("Daily Targets") {
+                Stepper(
+                    "Fasting: \(Int(fastingSettings.fastingTargetHours)) hours",
+                    value: $fastingSettings.fastingTargetHours,
+                    in: 1...24,
+                    step: 1
+                )
+
+                Stepper(
+                    "Calories: \(fastingSettings.calorieTarget) cal",
+                    value: Binding(
+                        get: { Double(fastingSettings.calorieTarget) },
+                        set: { fastingSettings.calorieTarget = Int($0) }
+                    ),
+                    in: 500...5000,
+                    step: 100
+                )
+            }
+
             Section("AI Provider") {
                 Picker("Provider", selection: $selectedProvider) {
                     ForEach(LLMProvider.allCases, id: \.self) { provider in
