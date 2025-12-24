@@ -10,9 +10,12 @@ import SwiftData
 
 @main
 struct FoodTrackerApp: App {
+    @StateObject private var appState = AppState.shared
+
     var body: some Scene {
         WindowGroup {
             ContentView()
+                .environmentObject(appState)
         }
         .modelContainer(for: Meal.self)
     }

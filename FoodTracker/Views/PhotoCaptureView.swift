@@ -11,6 +11,8 @@ struct PhotoCaptureView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
+    var openCameraDirectly: Bool = false
+
     @StateObject private var cameraService = CameraService()
     @State private var selectedImageData: Data?
     @State private var captureDate: Date?
@@ -18,74 +20,91 @@ struct PhotoCaptureView: View {
     @State private var errorMessage: String?
     @State private var selectedItem: PhotosPickerItem?
     @State private var showingCamera = false
+    @State private var hasAutoOpenedCamera = false
+
+    private var isWaitingForCamera: Bool {
+        openCameraDirectly && !showingCamera && selectedImageData == nil && !isAnalyzing
+    }
 
     var body: some View {
         NavigationStack {
-            VStack(spacing: 20) {
-                if let imageData = selectedImageData,
-                   let image = UIImage(data: imageData) {
-                    Image(uiImage: image)
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                        .frame(maxHeight: 300)
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
+            Group {
+                if isWaitingForCamera {
+                    // Minimal view while camera is launching
+                    Color(.systemBackground)
+                        .overlay {
+                            ProgressView()
+                        }
                 } else {
-                    ContentUnavailableView(
-                        "No Photo Selected",
-                        systemImage: "photo",
-                        description: Text("Take or choose a photo of your meal")
-                    )
-                    .frame(height: 300)
-                }
+                    VStack(spacing: 20) {
+                        if let imageData = selectedImageData,
+                           let image = UIImage(data: imageData) {
+                            Image(uiImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(maxHeight: 300)
+                                .clipShape(RoundedRectangle(cornerRadius: 12))
+                        } else {
+                            ContentUnavailableView(
+                                "No Photo Selected",
+                                systemImage: "photo",
+                                description: Text("Take or choose a photo of your meal")
+                            )
+                            .frame(height: 300)
+                        }
 
-                if isAnalyzing {
-                    ProgressView("Analyzing your meal...")
-                        .padding()
-                } else {
-                    HStack(spacing: 16) {
-                        if cameraService.isCameraAvailable {
-                            Button {
-                                Task {
-                                    await cameraService.requestAuthorization()
-                                    if cameraService.isAuthorized {
-                                        showingCamera = true
+                        if isAnalyzing {
+                            ProgressView("Analyzing your meal...")
+                                .padding()
+                        } else {
+                            HStack(spacing: 16) {
+                                if cameraService.isCameraAvailable {
+                                    Button {
+                                        Task {
+                                            await cameraService.requestAuthorization()
+                                            if cameraService.isAuthorized {
+                                                showingCamera = true
+                                            }
+                                        }
+                                    } label: {
+                                        Label("Camera", systemImage: "camera")
                                     }
+                                    .buttonStyle(.bordered)
                                 }
-                            } label: {
-                                Label("Camera", systemImage: "camera")
+
+                                PhotosPicker(
+                                    selection: $selectedItem,
+                                    matching: .images
+                                ) {
+                                    Label("Photos", systemImage: "photo.on.rectangle")
+                                }
+                                .buttonStyle(.bordered)
                             }
-                            .buttonStyle(.bordered)
                         }
 
-                        PhotosPicker(
-                            selection: $selectedItem,
-                            matching: .images
-                        ) {
-                            Label("Photos", systemImage: "photo.on.rectangle")
+                        if let error = errorMessage {
+                            Text(error)
+                                .foregroundStyle(.red)
+                                .font(.caption)
+                                .multilineTextAlignment(.center)
+                                .padding(.horizontal)
                         }
-                        .buttonStyle(.bordered)
+
+                        Spacer()
                     }
+                    .padding()
                 }
-
-                if let error = errorMessage {
-                    Text(error)
-                        .foregroundStyle(.red)
-                        .font(.caption)
-                        .multilineTextAlignment(.center)
-                        .padding(.horizontal)
-                }
-
-                Spacer()
             }
-            .padding()
-            .navigationTitle("Add Meal")
+            .navigationTitle(isWaitingForCamera ? "" : "Add Meal")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Cancel") {
-                        dismiss()
+                if !isWaitingForCamera {
+                    ToolbarItem(placement: .cancellationAction) {
+                        Button("Cancel") {
+                            dismiss()
+                        }
+                        .disabled(isAnalyzing)
                     }
-                    .disabled(isAnalyzing)
                 }
             }
             .onChange(of: selectedItem) { _, newItem in
@@ -106,9 +125,25 @@ struct PhotoCaptureView: View {
                     }
                 }
             }
-            .fullScreenCover(isPresented: $showingCamera) {
+            .fullScreenCover(isPresented: $showingCamera, onDismiss: {
+                // If camera was auto-opened and user cancelled without taking photo, dismiss the view
+                if openCameraDirectly && selectedImageData == nil && hasAutoOpenedCamera {
+                    dismiss()
+                }
+            }) {
                 CameraView(imageData: $selectedImageData)
                     .ignoresSafeArea()
+            }
+            .onAppear {
+                if openCameraDirectly && !hasAutoOpenedCamera && cameraService.isCameraAvailable {
+                    hasAutoOpenedCamera = true
+                    Task {
+                        await cameraService.requestAuthorization()
+                        if cameraService.isAuthorized {
+                            showingCamera = true
+                        }
+                    }
+                }
             }
         }
     }
