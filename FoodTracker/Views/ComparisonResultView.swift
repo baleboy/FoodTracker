@@ -20,6 +20,7 @@ struct ComparisonResultView: View {
 
     @State private var results: [ComparisonResult] = []
     @State private var failedModels: [FailedModel] = []
+    @State private var selectedProviders: Set<LLMProvider> = []
     @State private var isLoading = true
     @State private var errorMessage: String?
 
@@ -49,14 +50,31 @@ struct ComparisonResultView: View {
                             description: Text(errorMessage ?? "All models failed to analyze the image")
                         )
                     } else {
-                        Text("Choose the best result")
-                            .font(.headline)
-                            .foregroundStyle(.secondary)
+                        VStack(spacing: 4) {
+                            Text("Select the best result(s)")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+                            Text("Tap to select equivalent answers")
+                                .font(.caption)
+                                .foregroundStyle(.tertiary)
+                        }
 
                         ForEach(results, id: \.provider) { result in
-                            ModelResultCard(result: result) {
-                                selectResult(result)
+                            ModelResultCard(
+                                result: result,
+                                isSelected: selectedProviders.contains(result.provider)
+                            ) {
+                                toggleSelection(result.provider)
                             }
+                        }
+
+                        if !selectedProviders.isEmpty {
+                            Button(action: confirmSelection) {
+                                Text("Confirm Selection (\(selectedProviders.count))")
+                                    .frame(maxWidth: .infinity)
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .padding(.top, 8)
                         }
 
                         if !failedModels.isEmpty {
@@ -114,21 +132,36 @@ struct ComparisonResultView: View {
         isLoading = false
     }
 
-    private func selectResult(_ result: ComparisonResult) {
-        let rating = MealRating(rawValue: result.response.rating) ?? .yellow
+    private func toggleSelection(_ provider: LLMProvider) {
+        if selectedProviders.contains(provider) {
+            selectedProviders.remove(provider)
+        } else {
+            selectedProviders.insert(provider)
+        }
+    }
+
+    private func confirmSelection() {
+        guard let firstSelected = results.first(where: { selectedProviders.contains($0.provider) }) else {
+            return
+        }
+
+        let rating = MealRating(rawValue: firstSelected.response.rating) ?? .yellow
 
         let meal = Meal(
             photoData: imageData,
-            calorieEstimate: result.response.calorieEstimate,
+            calorieEstimate: firstSelected.response.calorieEstimate,
             rating: rating,
-            foodName: result.response.foodName,
+            foodName: firstSelected.response.foodName,
             timestamp: captureDate ?? Date()
         )
 
-        let preference = ModelPreference(provider: result.provider)
-
         modelContext.insert(meal)
-        modelContext.insert(preference)
+
+        // Create a preference for each selected provider
+        for provider in selectedProviders {
+            let preference = ModelPreference(provider: provider)
+            modelContext.insert(preference)
+        }
 
         dismiss()
     }
@@ -136,7 +169,8 @@ struct ComparisonResultView: View {
 
 struct ModelResultCard: View {
     let result: ComparisonResult
-    let onSelect: () -> Void
+    let isSelected: Bool
+    let onTap: () -> Void
 
     private var rating: MealRating {
         MealRating(rawValue: result.response.rating) ?? .yellow
@@ -185,15 +219,23 @@ struct ModelResultCard: View {
                     .lineLimit(3)
             }
 
-            Button(action: onSelect) {
-                Text("Choose This")
-                    .frame(maxWidth: .infinity)
+            HStack {
+                Spacer()
+                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                    .font(.title2)
+                    .foregroundStyle(isSelected ? .green : .secondary)
             }
-            .buttonStyle(.borderedProminent)
         }
         .padding()
+        .background(isSelected ? Color.green.opacity(0.1) : Color.clear)
         .background(.regularMaterial)
         .clipShape(RoundedRectangle(cornerRadius: 12))
+        .overlay(
+            RoundedRectangle(cornerRadius: 12)
+                .stroke(isSelected ? Color.green : Color.clear, lineWidth: 2)
+        )
+        .contentShape(Rectangle())
+        .onTapGesture(perform: onTap)
     }
 }
 
