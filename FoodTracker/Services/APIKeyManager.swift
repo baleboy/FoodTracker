@@ -18,6 +18,7 @@ final class APIKeyManager {
         switch provider {
         case .claude: return "claude-api-key"
         case .openAI: return "openai-api-key"
+        case .onDeviceML: return ""  // No API key needed
         }
     }
 
@@ -70,7 +71,10 @@ final class APIKeyManager {
     }
 
     func hasAPIKey(for provider: LLMProvider) -> Bool {
-        getAPIKey(for: provider) != nil
+        if provider == .onDeviceML {
+            return true  // No API key needed for on-device ML
+        }
+        return getAPIKey(for: provider) != nil
     }
 
     var selectedProvider: LLMProvider {
@@ -90,6 +94,7 @@ final class APIKeyManager {
         switch provider {
         case .claude: return ClaudeAPIService()
         case .openAI: return OpenAIService()
+        case .onDeviceML: return MLFoodService()
         }
     }
 

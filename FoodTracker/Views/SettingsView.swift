@@ -59,9 +59,18 @@ struct SettingsView: View {
                         Text(provider.rawValue).tag(provider)
                     }
                 }
-                .pickerStyle(.segmented)
                 .onChange(of: selectedProvider) { _, newValue in
                     APIKeyManager.shared.selectedProvider = newValue
+                }
+
+                if selectedProvider == .onDeviceML {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Label("On-Device Processing", systemImage: "checkmark.shield.fill")
+                            .foregroundStyle(.green)
+                        Text("Fast, private, no API costs. Requires FoodClassifier.mlmodel.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 

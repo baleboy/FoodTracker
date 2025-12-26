@@ -15,6 +15,7 @@ struct MealAnalysisResponse: Codable {
 enum LLMProvider: String, CaseIterable {
     case claude = "Claude"
     case openAI = "OpenAI"
+    case onDeviceML = "On-Device ML"
 }
 
 enum LLMError: Error, LocalizedError {
@@ -24,6 +25,9 @@ enum LLMError: Error, LocalizedError {
     case decodingError(Error)
     case rateLimited
     case serverError(Int)
+    case mlModelNotAvailable
+    case mlClassificationFailed
+    case foodNotRecognized
 
     var errorDescription: String? {
         switch self {
@@ -39,6 +43,12 @@ enum LLMError: Error, LocalizedError {
             return "Rate limited. Please try again later."
         case .serverError(let code):
             return "Server error: \(code)"
+        case .mlModelNotAvailable:
+            return "ML model not available. Please add FoodClassifier.mlmodel to the project."
+        case .mlClassificationFailed:
+            return "Failed to classify the image."
+        case .foodNotRecognized:
+            return "Could not recognize the food. Try using Claude or OpenAI instead."
         }
     }
 }
