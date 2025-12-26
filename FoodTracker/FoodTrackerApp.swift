@@ -17,6 +17,6 @@ struct FoodTrackerApp: App {
             ContentView()
                 .environmentObject(appState)
         }
-        .modelContainer(for: Meal.self)
+        .modelContainer(for: [Meal.self, ModelPreference.self])
     }
 }

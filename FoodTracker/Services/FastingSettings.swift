@@ -11,6 +11,7 @@ final class FastingSettings: ObservableObject {
     private let thresholdKey = "fasting-minimum-threshold-hours"
     private let fastingTargetKey = "fasting-target-hours"
     private let calorieTargetKey = "calorie-target"
+    private let comparisonModeKey = "comparison-mode-enabled"
 
     private let defaultThreshold: Double = 4.0
     private let defaultFastingTarget: Double = 16.0
@@ -34,6 +35,12 @@ final class FastingSettings: ObservableObject {
         }
     }
 
+    @Published var comparisonModeEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(comparisonModeEnabled, forKey: comparisonModeKey)
+        }
+    }
+
     var minimumThresholdSeconds: TimeInterval {
         minimumThresholdHours * 3600
     }
@@ -47,5 +54,7 @@ final class FastingSettings: ObservableObject {
 
         let storedCalorieTarget = UserDefaults.standard.integer(forKey: calorieTargetKey)
         self.calorieTarget = storedCalorieTarget > 0 ? storedCalorieTarget : defaultCalorieTarget
+
+        self.comparisonModeEnabled = UserDefaults.standard.bool(forKey: comparisonModeKey)
     }
 }

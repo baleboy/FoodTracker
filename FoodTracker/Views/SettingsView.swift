@@ -74,6 +74,23 @@ struct SettingsView: View {
                 }
             }
 
+            Section {
+                Toggle("Comparison Mode", isOn: $fastingSettings.comparisonModeEnabled)
+
+                if fastingSettings.comparisonModeEnabled {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text("When enabled, each photo is analyzed by all available models. You choose the best result.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        Text("Requires API keys for cloud models.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+            } header: {
+                Text("Comparison Mode")
+            }
+
             Section("Claude API Key") {
                 APIKeyRow(
                     provider: .claude,

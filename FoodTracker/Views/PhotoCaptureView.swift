@@ -21,6 +21,7 @@ struct PhotoCaptureView: View {
     @State private var selectedItem: PhotosPickerItem?
     @State private var showingCamera = false
     @State private var hasAutoOpenedCamera = false
+    @State private var showingComparison = false
 
     private var isWaitingForCamera: Bool {
         openCameraDirectly && !showingCamera && selectedImageData == nil && !isAnalyzing
@@ -113,15 +114,23 @@ struct PhotoCaptureView: View {
                         selectedImageData = data
                         captureDate = ImageHelpers.extractCaptureDate(from: data)
                         errorMessage = nil
-                        await analyzeMeal()
+                        if FastingSettings.shared.comparisonModeEnabled {
+                            showingComparison = true
+                        } else {
+                            await analyzeMeal()
+                        }
                     }
                 }
             }
             .onChange(of: selectedImageData) { oldValue, newValue in
                 // Auto-analyze when image comes from camera (selectedItem won't change)
                 if oldValue == nil, newValue != nil, selectedItem == nil {
-                    Task {
-                        await analyzeMeal()
+                    if FastingSettings.shared.comparisonModeEnabled {
+                        showingComparison = true
+                    } else {
+                        Task {
+                            await analyzeMeal()
+                        }
                     }
                 }
             }
@@ -133,6 +142,13 @@ struct PhotoCaptureView: View {
             }) {
                 CameraView(imageData: $selectedImageData)
                     .ignoresSafeArea()
+            }
+            .fullScreenCover(isPresented: $showingComparison, onDismiss: {
+                dismiss()
+            }) {
+                if let imageData = selectedImageData {
+                    ComparisonResultView(imageData: imageData, captureDate: captureDate)
+                }
             }
             .onAppear {
                 if openCameraDirectly && !hasAutoOpenedCamera && cameraService.isCameraAvailable {

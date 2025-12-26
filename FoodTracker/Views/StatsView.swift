@@ -22,8 +22,25 @@ struct DayStats: Identifiable {
     }
 }
 
+struct ProviderStats: Identifiable {
+    let id = UUID()
+    let provider: String
+    let count: Int
+    let percentage: Double
+
+    var color: Color {
+        switch provider {
+        case "Claude": return .purple
+        case "OpenAI": return .green
+        case "On-Device ML": return .blue
+        default: return .gray
+        }
+    }
+}
+
 struct StatsView: View {
     @Query(sort: \Meal.timestamp, order: .reverse) private var meals: [Meal]
+    @Query private var preferences: [ModelPreference]
     @ObservedObject private var settings = FastingSettings.shared
 
     private var weekStats: [DayStats] {
@@ -48,6 +65,24 @@ struct StatsView: View {
                 metFastingTarget: fastingHours >= settings.fastingTargetHours
             )
         }
+    }
+
+    private var providerStats: [ProviderStats] {
+        let total = preferences.count
+        guard total > 0 else { return [] }
+
+        var counts: [String: Int] = [:]
+        for pref in preferences {
+            counts[pref.provider, default: 0] += 1
+        }
+
+        return counts.map { provider, count in
+            ProviderStats(
+                provider: provider,
+                count: count,
+                percentage: Double(count) / Double(total) * 100
+            )
+        }.sorted { $0.count > $1.count }
     }
 
     var body: some View {
@@ -100,6 +135,37 @@ struct StatsView: View {
                 .padding()
                 .background(Color(.secondarySystemGroupedBackground))
                 .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                if !providerStats.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Model Preferences")
+                            .font(.headline)
+
+                        Chart(providerStats) { stat in
+                            BarMark(
+                                x: .value("Provider", stat.provider),
+                                y: .value("Count", stat.count)
+                            )
+                            .foregroundStyle(stat.color)
+                            .annotation(position: .top) {
+                                Text("\(Int(stat.percentage))%")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .chartYAxis {
+                            AxisMarks(position: .leading)
+                        }
+                        .frame(height: 200)
+
+                        Text("Based on \(preferences.count) comparison\(preferences.count == 1 ? "" : "s")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
             .padding()
         }
@@ -112,5 +178,5 @@ struct StatsView: View {
     NavigationStack {
         StatsView()
     }
-    .modelContainer(for: Meal.self, inMemory: true)
+    .modelContainer(for: [Meal.self, ModelPreference.self], inMemory: true)
 }
