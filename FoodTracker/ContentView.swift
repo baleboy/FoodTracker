@@ -7,14 +7,18 @@
 
 import SwiftUI
 import SwiftData
+import PhotosUI
 
 struct ContentView: View {
     @EnvironmentObject private var appState: AppState
     @Query(sort: \Meal.timestamp, order: .reverse) private var meals: [Meal]
     @State private var showingSettings = false
     @State private var showingPhotoCapture = false
-    @State private var openCameraDirectly = false
+    @State private var showingCamera = false
     @State private var selectedTab = 0
+    @State private var selectedPhotoItem: PhotosPickerItem?
+    @State private var selectedPhotoData: Data?
+    @State private var cameraImageData: Data?
 
     private var lastMealTimestamp: Date? {
         meals.first?.timestamp
@@ -39,8 +43,16 @@ struct ContentView: View {
                         }
                     }
                     ToolbarItem(placement: .topBarTrailing) {
-                        Button(action: { showingPhotoCapture = true }) {
-                            Label("Add Meal", systemImage: "camera")
+                        HStack(spacing: 16) {
+                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                Label("Gallery", systemImage: "photo.on.rectangle")
+                            }
+
+                            Button {
+                                showingCamera = true
+                            } label: {
+                                Label("Camera", systemImage: "camera")
+                            }
                         }
                     }
                 }
@@ -69,9 +81,29 @@ struct ContentView: View {
             .tag(1)
         }
         .sheet(isPresented: $showingPhotoCapture, onDismiss: {
-            openCameraDirectly = false
+            selectedPhotoData = nil
         }) {
-            PhotoCaptureView(openCameraDirectly: openCameraDirectly)
+            PhotoCaptureView(initialImageData: selectedPhotoData)
+        }
+        .fullScreenCover(isPresented: $showingCamera) {
+            CameraView(imageData: $cameraImageData)
+                .ignoresSafeArea()
+        }
+        .onChange(of: selectedPhotoItem) { _, newItem in
+            Task {
+                if let data = try? await newItem?.loadTransferable(type: Data.self) {
+                    selectedPhotoData = data
+                    selectedPhotoItem = nil
+                    showingPhotoCapture = true
+                }
+            }
+        }
+        .onChange(of: cameraImageData) { _, newData in
+            if let data = newData {
+                selectedPhotoData = data
+                cameraImageData = nil
+                showingPhotoCapture = true
+            }
         }
         .sheet(isPresented: $showingSettings) {
             NavigationStack {
@@ -81,8 +113,7 @@ struct ContentView: View {
         }
         .onChange(of: appState.shouldOpenCameraDirectly) { _, shouldOpen in
             if shouldOpen {
-                openCameraDirectly = true
-                showingPhotoCapture = true
+                showingCamera = true
                 appState.shouldOpenCameraDirectly = false
             }
         }

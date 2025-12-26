@@ -5,143 +5,57 @@
 
 import SwiftUI
 import SwiftData
-import PhotosUI
 
 struct PhotoCaptureView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
-    var openCameraDirectly: Bool = false
+    var initialImageData: Data? = nil
 
-    @StateObject private var cameraService = CameraService()
     @State private var selectedImageData: Data?
     @State private var captureDate: Date?
     @State private var isAnalyzing = false
     @State private var errorMessage: String?
-    @State private var selectedItem: PhotosPickerItem?
-    @State private var showingCamera = false
-    @State private var hasAutoOpenedCamera = false
     @State private var showingComparison = false
-
-    private var isWaitingForCamera: Bool {
-        openCameraDirectly && !showingCamera && selectedImageData == nil && !isAnalyzing
-    }
+    @State private var hasProcessedInitialImage = false
 
     var body: some View {
         NavigationStack {
-            Group {
-                if isWaitingForCamera {
-                    // Minimal view while camera is launching
-                    Color(.systemBackground)
-                        .overlay {
-                            ProgressView()
-                        }
-                } else {
-                    VStack(spacing: 20) {
-                        if let imageData = selectedImageData,
-                           let image = UIImage(data: imageData) {
-                            Image(uiImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(maxHeight: 300)
-                                .clipShape(RoundedRectangle(cornerRadius: 12))
-                        } else {
-                            ContentUnavailableView(
-                                "No Photo Selected",
-                                systemImage: "photo",
-                                description: Text("Take or choose a photo of your meal")
-                            )
-                            .frame(height: 300)
-                        }
-
-                        if isAnalyzing {
-                            ProgressView("Analyzing your meal...")
-                                .padding()
-                        } else {
-                            HStack(spacing: 16) {
-                                if cameraService.isCameraAvailable {
-                                    Button {
-                                        Task {
-                                            await cameraService.requestAuthorization()
-                                            if cameraService.isAuthorized {
-                                                showingCamera = true
-                                            }
-                                        }
-                                    } label: {
-                                        Label("Camera", systemImage: "camera")
-                                    }
-                                    .buttonStyle(.bordered)
-                                }
-
-                                PhotosPicker(
-                                    selection: $selectedItem,
-                                    matching: .images
-                                ) {
-                                    Label("Photos", systemImage: "photo.on.rectangle")
-                                }
-                                .buttonStyle(.bordered)
-                            }
-                        }
-
-                        if let error = errorMessage {
-                            Text(error)
-                                .foregroundStyle(.red)
-                                .font(.caption)
-                                .multilineTextAlignment(.center)
-                                .padding(.horizontal)
-                        }
-
-                        Spacer()
-                    }
-                    .padding()
+            VStack(spacing: 20) {
+                if let imageData = selectedImageData,
+                   let image = UIImage(data: imageData) {
+                    Image(uiImage: image)
+                        .resizable()
+                        .aspectRatio(contentMode: .fit)
+                        .frame(maxHeight: 300)
+                        .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+
+                if isAnalyzing {
+                    ProgressView("Analyzing your meal...")
+                        .padding()
+                }
+
+                if let error = errorMessage {
+                    Text(error)
+                        .foregroundStyle(.red)
+                        .font(.caption)
+                        .multilineTextAlignment(.center)
+                        .padding(.horizontal)
+                }
+
+                Spacer()
             }
-            .navigationTitle(isWaitingForCamera ? "" : "Add Meal")
+            .padding()
+            .navigationTitle("Add Meal")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                if !isWaitingForCamera {
-                    ToolbarItem(placement: .cancellationAction) {
-                        Button("Cancel") {
-                            dismiss()
-                        }
-                        .disabled(isAnalyzing)
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel") {
+                        dismiss()
                     }
+                    .disabled(isAnalyzing)
                 }
-            }
-            .onChange(of: selectedItem) { _, newItem in
-                Task {
-                    if let data = try? await newItem?.loadTransferable(type: Data.self) {
-                        selectedImageData = data
-                        captureDate = ImageHelpers.extractCaptureDate(from: data)
-                        errorMessage = nil
-                        if FastingSettings.shared.comparisonModeEnabled {
-                            showingComparison = true
-                        } else {
-                            await analyzeMeal()
-                        }
-                    }
-                }
-            }
-            .onChange(of: selectedImageData) { oldValue, newValue in
-                // Auto-analyze when image comes from camera (selectedItem won't change)
-                if oldValue == nil, newValue != nil, selectedItem == nil {
-                    if FastingSettings.shared.comparisonModeEnabled {
-                        showingComparison = true
-                    } else {
-                        Task {
-                            await analyzeMeal()
-                        }
-                    }
-                }
-            }
-            .fullScreenCover(isPresented: $showingCamera, onDismiss: {
-                // If camera was auto-opened and user cancelled without taking photo, dismiss the view
-                if openCameraDirectly && selectedImageData == nil && hasAutoOpenedCamera {
-                    dismiss()
-                }
-            }) {
-                CameraView(imageData: $selectedImageData)
-                    .ignoresSafeArea()
             }
             .fullScreenCover(isPresented: $showingComparison, onDismiss: {
                 dismiss()
@@ -151,12 +65,15 @@ struct PhotoCaptureView: View {
                 }
             }
             .onAppear {
-                if openCameraDirectly && !hasAutoOpenedCamera && cameraService.isCameraAvailable {
-                    hasAutoOpenedCamera = true
-                    Task {
-                        await cameraService.requestAuthorization()
-                        if cameraService.isAuthorized {
-                            showingCamera = true
+                if let data = initialImageData, !hasProcessedInitialImage {
+                    hasProcessedInitialImage = true
+                    selectedImageData = data
+                    captureDate = ImageHelpers.extractCaptureDate(from: data)
+                    if FastingSettings.shared.comparisonModeEnabled {
+                        showingComparison = true
+                    } else {
+                        Task {
+                            await analyzeMeal()
                         }
                     }
                 }
