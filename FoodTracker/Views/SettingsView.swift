@@ -10,8 +10,10 @@ struct SettingsView: View {
     @State private var selectedProvider = APIKeyManager.shared.selectedProvider
     @State private var claudeKey = ""
     @State private var openAIKey = ""
+    @State private var geminiKey = ""
     @State private var hasClaudeKey = APIKeyManager.shared.hasAPIKey(for: .claude)
     @State private var hasOpenAIKey = APIKeyManager.shared.hasAPIKey(for: .openAI)
+    @State private var hasGeminiKey = APIKeyManager.shared.hasAPIKey(for: .gemini)
     @State private var showingSaveConfirmation = false
     @State private var saveError = false
     @ObservedObject private var fastingSettings = FastingSettings.shared
@@ -122,6 +124,23 @@ struct SettingsView: View {
                 Link(
                     "Get OpenAI API Key",
                     destination: URL(string: "https://platform.openai.com/api-keys")!
+                )
+            }
+
+            Section("Gemini API Key") {
+                APIKeyRow(
+                    provider: .gemini,
+                    apiKey: $geminiKey,
+                    hasKey: $hasGeminiKey,
+                    showingSaveConfirmation: $showingSaveConfirmation,
+                    saveError: $saveError
+                )
+            }
+
+            Section {
+                Link(
+                    "Get Gemini API Key",
+                    destination: URL(string: "https://aistudio.google.com/apikey")!
                 )
             }
         }

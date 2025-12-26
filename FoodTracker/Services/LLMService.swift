@@ -15,6 +15,7 @@ struct MealAnalysisResponse: Codable {
 enum LLMProvider: String, CaseIterable {
     case claude = "Claude"
     case openAI = "OpenAI"
+    case gemini = "Gemini"
     case onDeviceML = "On-Device ML"
 }
 

@@ -11,12 +11,17 @@ struct ComparisonResult {
     let duration: TimeInterval
 }
 
+struct ComparisonFailure {
+    let provider: LLMProvider
+    let error: Error
+}
+
 actor ComparisonService {
     static let shared = ComparisonService()
 
     private init() {}
 
-    func analyzeWithAllModels(imageData: Data) async -> [Result<ComparisonResult, Error>] {
+    func analyzeWithAllModels(imageData: Data) async -> (successes: [ComparisonResult], failures: [ComparisonFailure]) {
         await withTaskGroup(of: (LLMProvider, Result<MealAnalysisResponse, Error>, TimeInterval).self) { group in
             for provider in LLMProvider.allCases {
                 if provider != .onDeviceML && !APIKeyManager.shared.hasAPIKey(for: provider) {
@@ -37,17 +42,18 @@ actor ComparisonService {
                 }
             }
 
-            var results: [Result<ComparisonResult, Error>] = []
+            var successes: [ComparisonResult] = []
+            var failures: [ComparisonFailure] = []
             for await (provider, result, duration) in group {
                 switch result {
                 case .success(let response):
-                    results.append(.success(ComparisonResult(provider: provider, response: response, duration: duration)))
+                    successes.append(ComparisonResult(provider: provider, response: response, duration: duration))
                 case .failure(let error):
-                    results.append(.failure(error))
+                    failures.append(ComparisonFailure(provider: provider, error: error))
                 }
             }
 
-            return results
+            return (successes, failures)
         }
     }
 }

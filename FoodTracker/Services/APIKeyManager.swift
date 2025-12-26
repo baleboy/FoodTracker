@@ -18,6 +18,7 @@ final class APIKeyManager {
         switch provider {
         case .claude: return "claude-api-key"
         case .openAI: return "openai-api-key"
+        case .gemini: return "gemini-api-key"
         case .onDeviceML: return ""  // No API key needed
         }
     }
@@ -94,6 +95,7 @@ final class APIKeyManager {
         switch provider {
         case .claude: return ClaudeAPIService()
         case .openAI: return OpenAIService()
+        case .gemini: return GeminiService()
         case .onDeviceML: return MLFoodService()
         }
     }

@@ -6,6 +6,11 @@
 import SwiftUI
 import SwiftData
 
+struct FailedModel {
+    let provider: LLMProvider
+    let error: String
+}
+
 struct ComparisonResultView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
@@ -14,6 +19,7 @@ struct ComparisonResultView: View {
     let captureDate: Date?
 
     @State private var results: [ComparisonResult] = []
+    @State private var failedModels: [FailedModel] = []
     @State private var isLoading = true
     @State private var errorMessage: String?
 
@@ -52,6 +58,19 @@ struct ComparisonResultView: View {
                                 selectResult(result)
                             }
                         }
+
+                        if !failedModels.isEmpty {
+                            Divider()
+                                .padding(.vertical, 8)
+
+                            Text("Failed Models")
+                                .font(.headline)
+                                .foregroundStyle(.secondary)
+
+                            ForEach(failedModels, id: \.provider) { failed in
+                                FailedModelCard(failedModel: failed)
+                            }
+                        }
                     }
                 }
                 .padding()
@@ -76,24 +95,14 @@ struct ComparisonResultView: View {
         isLoading = true
         errorMessage = nil
 
-        let allResults = await ComparisonService.shared.analyzeWithAllModels(imageData: imageData)
+        let (successes, failures) = await ComparisonService.shared.analyzeWithAllModels(imageData: imageData)
 
-        var successResults: [ComparisonResult] = []
-        var errors: [String] = []
+        results = successes.sorted { $0.provider.rawValue < $1.provider.rawValue }
+        failedModels = failures.map { FailedModel(provider: $0.provider, error: $0.error.localizedDescription) }
+            .sorted { $0.provider.rawValue < $1.provider.rawValue }
 
-        for result in allResults {
-            switch result {
-            case .success(let comparisonResult):
-                successResults.append(comparisonResult)
-            case .failure(let error):
-                errors.append(error.localizedDescription)
-            }
-        }
-
-        results = successResults.sorted { $0.provider.rawValue < $1.provider.rawValue }
-
-        if successResults.isEmpty && !errors.isEmpty {
-            errorMessage = errors.joined(separator: "\n")
+        if successes.isEmpty && !failures.isEmpty {
+            errorMessage = failures.map { "\($0.provider.rawValue): \($0.error.localizedDescription)" }.joined(separator: "\n")
         }
 
         isLoading = false
@@ -175,6 +184,29 @@ struct ModelResultCard: View {
                     .frame(maxWidth: .infinity)
             }
             .buttonStyle(.borderedProminent)
+        }
+        .padding()
+        .background(.regularMaterial)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+    }
+}
+
+struct FailedModelCard: View {
+    let failedModel: FailedModel
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            HStack {
+                Text(failedModel.provider.rawValue)
+                    .font(.headline)
+                Spacer()
+                Image(systemName: "exclamationmark.triangle.fill")
+                    .foregroundStyle(.orange)
+            }
+
+            Text(failedModel.error)
+                .font(.caption)
+                .foregroundStyle(.secondary)
         }
         .padding()
         .background(.regularMaterial)
