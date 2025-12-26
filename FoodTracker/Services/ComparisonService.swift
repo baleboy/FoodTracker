@@ -8,6 +8,7 @@ import Foundation
 struct ComparisonResult {
     let provider: LLMProvider
     let response: MealAnalysisResponse
+    let duration: TimeInterval
 }
 
 actor ComparisonService {
@@ -16,7 +17,7 @@ actor ComparisonService {
     private init() {}
 
     func analyzeWithAllModels(imageData: Data) async -> [Result<ComparisonResult, Error>] {
-        await withTaskGroup(of: (LLMProvider, Result<MealAnalysisResponse, Error>).self) { group in
+        await withTaskGroup(of: (LLMProvider, Result<MealAnalysisResponse, Error>, TimeInterval).self) { group in
             for provider in LLMProvider.allCases {
                 if provider != .onDeviceML && !APIKeyManager.shared.hasAPIKey(for: provider) {
                     continue
@@ -24,20 +25,23 @@ actor ComparisonService {
 
                 group.addTask {
                     let service = APIKeyManager.shared.createService(for: provider)
+                    let startTime = CFAbsoluteTimeGetCurrent()
                     do {
                         let response = try await service.analyzeMeal(imageData: imageData)
-                        return (provider, .success(response))
+                        let duration = CFAbsoluteTimeGetCurrent() - startTime
+                        return (provider, .success(response), duration)
                     } catch {
-                        return (provider, .failure(error))
+                        let duration = CFAbsoluteTimeGetCurrent() - startTime
+                        return (provider, .failure(error), duration)
                     }
                 }
             }
 
             var results: [Result<ComparisonResult, Error>] = []
-            for await (provider, result) in group {
+            for await (provider, result, duration) in group {
                 switch result {
                 case .success(let response):
-                    results.append(.success(ComparisonResult(provider: provider, response: response)))
+                    results.append(.success(ComparisonResult(provider: provider, response: response, duration: duration)))
                 case .failure(let error):
                     results.append(.failure(error))
                 }

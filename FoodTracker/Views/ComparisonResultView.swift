@@ -127,11 +127,22 @@ struct ModelResultCard: View {
         MealRating(rawValue: result.response.rating) ?? .yellow
     }
 
+    private var formattedDuration: String {
+        if result.duration < 1 {
+            return String(format: "%.0fms", result.duration * 1000)
+        } else {
+            return String(format: "%.1fs", result.duration)
+        }
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Text(result.provider.rawValue)
                     .font(.headline)
+                Text(formattedDuration)
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 Spacer()
                 Circle()
                     .fill(rating.displayColor)
