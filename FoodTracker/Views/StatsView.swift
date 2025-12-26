@@ -29,18 +29,43 @@ struct ProviderStats: Identifiable {
     let percentage: Double
 
     var color: Color {
-        switch provider {
-        case "Claude": return .purple
-        case "OpenAI": return .green
-        case "On-Device ML": return .blue
-        default: return .gray
+        providerColor(for: provider)
+    }
+}
+
+struct ResponseTimeStats: Identifiable {
+    let id = UUID()
+    let provider: String
+    let averageTime: Double
+    let count: Int
+
+    var color: Color {
+        providerColor(for: provider)
+    }
+
+    var formattedTime: String {
+        if averageTime < 1 {
+            return String(format: "%.0fms", averageTime * 1000)
+        } else {
+            return String(format: "%.1fs", averageTime)
         }
+    }
+}
+
+private func providerColor(for provider: String) -> Color {
+    switch provider {
+    case "Claude": return .purple
+    case "OpenAI": return .green
+    case "Gemini": return .orange
+    case "On-Device ML": return .blue
+    default: return .gray
     }
 }
 
 struct StatsView: View {
     @Query(sort: \Meal.timestamp, order: .reverse) private var meals: [Meal]
     @Query private var preferences: [ModelPreference]
+    @Query private var responseTimes: [ModelResponseTime]
     @ObservedObject private var settings = FastingSettings.shared
 
     private var weekStats: [DayStats] {
@@ -83,6 +108,24 @@ struct StatsView: View {
                 percentage: Double(count) / Double(total) * 100
             )
         }.sorted { $0.count > $1.count }
+    }
+
+    private var responseTimeStats: [ResponseTimeStats] {
+        guard !responseTimes.isEmpty else { return [] }
+
+        var timesByProvider: [String: [Double]] = [:]
+        for record in responseTimes {
+            timesByProvider[record.provider, default: []].append(record.responseTime)
+        }
+
+        return timesByProvider.map { provider, times in
+            let average = times.reduce(0, +) / Double(times.count)
+            return ResponseTimeStats(
+                provider: provider,
+                averageTime: average,
+                count: times.count
+            )
+        }.sorted { $0.averageTime < $1.averageTime }
     }
 
     var body: some View {
@@ -166,6 +209,44 @@ struct StatsView: View {
                     .background(Color(.secondarySystemGroupedBackground))
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
+
+                if !responseTimeStats.isEmpty {
+                    VStack(alignment: .leading, spacing: 8) {
+                        Text("Average Response Time")
+                            .font(.headline)
+
+                        Chart(responseTimeStats) { stat in
+                            BarMark(
+                                x: .value("Provider", stat.provider),
+                                y: .value("Time", stat.averageTime)
+                            )
+                            .foregroundStyle(stat.color)
+                            .annotation(position: .top) {
+                                Text(stat.formattedTime)
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+                        .chartYAxis {
+                            AxisMarks(position: .leading) { value in
+                                AxisGridLine()
+                                AxisValueLabel {
+                                    if let seconds = value.as(Double.self) {
+                                        Text(String(format: "%.1fs", seconds))
+                                    }
+                                }
+                            }
+                        }
+                        .frame(height: 200)
+
+                        Text("Based on \(responseTimes.count) API call\(responseTimes.count == 1 ? "" : "s")")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    .padding()
+                    .background(Color(.secondarySystemGroupedBackground))
+                    .clipShape(RoundedRectangle(cornerRadius: 12))
+                }
             }
             .padding()
         }
@@ -178,5 +259,5 @@ struct StatsView: View {
     NavigationStack {
         StatsView()
     }
-    .modelContainer(for: [Meal.self, ModelPreference.self], inMemory: true)
+    .modelContainer(for: [Meal.self, ModelPreference.self, ModelResponseTime.self], inMemory: true)
 }

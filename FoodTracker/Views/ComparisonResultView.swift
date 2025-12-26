@@ -101,6 +101,12 @@ struct ComparisonResultView: View {
         failedModels = failures.map { FailedModel(provider: $0.provider, error: $0.error.localizedDescription) }
             .sorted { $0.provider.rawValue < $1.provider.rawValue }
 
+        // Save response times for successful models
+        for result in successes {
+            let responseTime = ModelResponseTime(provider: result.provider, responseTime: result.duration)
+            modelContext.insert(responseTime)
+        }
+
         if successes.isEmpty && !failures.isEmpty {
             errorMessage = failures.map { "\($0.provider.rawValue): \($0.error.localizedDescription)" }.joined(separator: "\n")
         }
@@ -219,5 +225,5 @@ struct FailedModelCard: View {
         imageData: Data(),
         captureDate: nil
     )
-    .modelContainer(for: [Meal.self, ModelPreference.self], inMemory: true)
+    .modelContainer(for: [Meal.self, ModelPreference.self, ModelResponseTime.self], inMemory: true)
 }
