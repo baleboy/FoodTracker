@@ -5,11 +5,112 @@
 
 import Foundation
 
+// MARK: - Nutrition Data Types
+
+struct MacroNutrients: Codable, Equatable {
+    let proteinG: Double
+    let carbsG: Double
+    let fatG: Double
+    let fiberG: Double
+    let sugarG: Double
+
+    static let zero = MacroNutrients(proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0, sugarG: 0)
+}
+
+struct MicroNutrients: Codable, Equatable {
+    let sodiumMg: Double
+    let cholesterolMg: Double
+    let satFatG: Double
+
+    static let zero = MicroNutrients(sodiumMg: 0, cholesterolMg: 0, satFatG: 0)
+}
+
+struct FoodItem: Codable, Equatable, Identifiable {
+    var id: String { name + String(caloriesKcal) }
+
+    let name: String
+    let quantity: Double
+    let unit: String
+    let estimatedWeightG: Double
+    let estimatedVolumeML: Double
+    let caloriesKcal: Int
+    let macros: MacroNutrients
+    let micros: MicroNutrients
+    let confidence: Double
+    let evidence: [String]
+    let assumptions: [String]
+}
+
+struct NutritionTotals: Codable, Equatable {
+    let caloriesKcal: Int
+    let macros: MacroNutrients
+    let micros: MicroNutrients
+
+    static let zero = NutritionTotals(caloriesKcal: 0, macros: .zero, micros: .zero)
+}
+
+struct UncertaintyInfo: Codable, Equatable {
+    let overallConfidence: Double
+    let biggestSources: [String]
+
+    static let defaultValue = UncertaintyInfo(overallConfidence: 0.5, biggestSources: [])
+}
+
+// MARK: - Meal Analysis Response
+
 struct MealAnalysisResponse: Codable {
     let foodName: String
-    let calorieEstimate: Int
+    let items: [FoodItem]
+    let totals: NutritionTotals
     let rating: String
-    let reasoning: String
+    let ratingReason: String
+    let healthNotes: [String]
+    let uncertainty: UncertaintyInfo
+
+    // Backward compatibility computed properties
+    var calorieEstimate: Int { totals.caloriesKcal }
+    var reasoning: String { ratingReason }
+}
+
+extension MealAnalysisResponse {
+    /// Creates a response from legacy simple format (used by MLFoodService)
+    static func fromLegacy(
+        foodName: String,
+        calorieEstimate: Int,
+        rating: String,
+        reasoning: String
+    ) -> MealAnalysisResponse {
+        let item = FoodItem(
+            name: foodName,
+            quantity: 1,
+            unit: "serving",
+            estimatedWeightG: 0,
+            estimatedVolumeML: 0,
+            caloriesKcal: calorieEstimate,
+            macros: .zero,
+            micros: .zero,
+            confidence: 0.5,
+            evidence: [],
+            assumptions: ["ML-based estimate - detailed nutrition unavailable"]
+        )
+
+        return MealAnalysisResponse(
+            foodName: foodName,
+            items: [item],
+            totals: NutritionTotals(
+                caloriesKcal: calorieEstimate,
+                macros: .zero,
+                micros: .zero
+            ),
+            rating: rating,
+            ratingReason: reasoning,
+            healthNotes: [],
+            uncertainty: UncertaintyInfo(
+                overallConfidence: 0.5,
+                biggestSources: ["On-device ML provides limited nutritional data"]
+            )
+        )
+    }
 }
 
 enum LLMProvider: String, CaseIterable {
@@ -57,20 +158,3 @@ enum LLMError: Error, LocalizedError {
 protocol LLMService: Sendable {
     func analyzeMeal(imageData: Data) async throws -> MealAnalysisResponse
 }
-
-let mealAnalysisPrompt = """
-Analyze this food image and provide a nutritional assessment.
-
-Respond with ONLY a JSON object in this exact format (no markdown, no explanation):
-{
-    "foodName": "Apple",
-    "calorieEstimate": 95,
-    "rating": "green",
-    "reasoning": "Fresh fruit, low calorie, high fiber"
-}
-
-Guidelines:
-- foodName: Short name of the food (1-4 words max, e.g. "Apple", "Chicken salad", "Pepperoni pizza"). Just the food, ignore hands, plates, background.
-- rating: "green" (healthy), "yellow" (moderate), or "red" (unhealthy)
-- calorieEstimate: Your best guess for total calories
-"""

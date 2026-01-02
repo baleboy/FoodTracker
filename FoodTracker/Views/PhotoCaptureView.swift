@@ -91,13 +91,9 @@ struct PhotoCaptureView: View {
             let service = APIKeyManager.shared.createSelectedService()
             let result = try await service.analyzeMeal(imageData: imageData)
 
-            let rating = MealRating(rawValue: result.rating) ?? .yellow
-
             let meal = Meal(
                 photoData: imageData,
-                calorieEstimate: result.calorieEstimate,
-                rating: rating,
-                foodName: result.foodName,
+                response: result,
                 timestamp: captureDate ?? Date()
             )
 

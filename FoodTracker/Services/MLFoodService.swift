@@ -61,7 +61,7 @@ actor MLFoodService: LLMService {
         // Look up nutrition data
         guard let nutrition = nutritionDB.lookup(topResult.identifier) else {
             // Food not in database - still return with estimated values
-            return MealAnalysisResponse(
+            return MealAnalysisResponse.fromLegacy(
                 foodName: foodName,
                 calorieEstimate: 250,  // Default estimate
                 rating: "yellow",
@@ -69,7 +69,7 @@ actor MLFoodService: LLMService {
             )
         }
 
-        return MealAnalysisResponse(
+        return MealAnalysisResponse.fromLegacy(
             foodName: foodName,
             calorieEstimate: nutrition.caloriesPerServing,
             rating: nutrition.category,

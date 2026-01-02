@@ -145,13 +145,9 @@ struct ComparisonResultView: View {
             return
         }
 
-        let rating = MealRating(rawValue: firstSelected.response.rating) ?? .yellow
-
         let meal = Meal(
             photoData: imageData,
-            calorieEstimate: firstSelected.response.calorieEstimate,
-            rating: rating,
-            foodName: firstSelected.response.foodName,
+            response: firstSelected.response,
             timestamp: captureDate ?? Date()
         )
 
@@ -184,6 +180,14 @@ struct ModelResultCard: View {
         }
     }
 
+    private var macros: MacroNutrients {
+        result.response.totals.macros
+    }
+
+    private var hasMacros: Bool {
+        macros != .zero
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -213,6 +217,22 @@ struct ModelResultCard: View {
                         .fontWeight(.medium)
                 }
 
+                if hasMacros {
+                    HStack(spacing: 12) {
+                        MacroLabel(label: "P", value: macros.proteinG)
+                        MacroLabel(label: "C", value: macros.carbsG)
+                        MacroLabel(label: "F", value: macros.fatG)
+                    }
+                }
+
+                HStack {
+                    Text("Confidence:")
+                        .foregroundStyle(.secondary)
+                    Text("\(Int(result.response.uncertainty.overallConfidence * 100))%")
+                        .fontWeight(.medium)
+                }
+                .font(.caption)
+
                 Text(result.response.reasoning)
                     .font(.caption)
                     .foregroundStyle(.secondary)
@@ -236,6 +256,21 @@ struct ModelResultCard: View {
         )
         .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
+    }
+}
+
+struct MacroLabel: View {
+    let label: String
+    let value: Double
+
+    var body: some View {
+        HStack(spacing: 2) {
+            Text(label)
+                .fontWeight(.semibold)
+            Text("\(Int(value))g")
+        }
+        .font(.caption)
+        .foregroundStyle(.secondary)
     }
 }
 
