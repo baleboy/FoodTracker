@@ -17,7 +17,6 @@ struct SettingsView: View {
     @State private var showingSaveConfirmation = false
     @State private var saveError = false
     @ObservedObject private var fastingSettings = FastingSettings.shared
-    @ObservedObject private var promptSettings = PromptSettings.shared
 
     var body: some View {
         Form {
@@ -92,30 +91,6 @@ struct SettingsView: View {
                 }
             } header: {
                 Text("Comparison Mode")
-            }
-
-            Section {
-                NavigationLink {
-                    PromptEditorView(prompt: $promptSettings.prompt)
-                } label: {
-                    VStack(alignment: .leading, spacing: 4) {
-                        Text("Analysis Prompt")
-                        Text(promptSettings.prompt.prefix(50) + "...")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                            .lineLimit(1)
-                    }
-                }
-
-                if promptSettings.prompt != PromptSettings.defaultPrompt {
-                    Button("Reset to Default") {
-                        promptSettings.resetToDefault()
-                    }
-                }
-            } header: {
-                Text("Prompt")
-            } footer: {
-                Text("Customize the prompt sent to AI models for food analysis.")
             }
 
             Section("Claude API Key") {
@@ -223,26 +198,6 @@ struct APIKeyRow: View {
             }
             .disabled(apiKey.isEmpty)
         }
-    }
-}
-
-struct PromptEditorView: View {
-    @Binding var prompt: String
-    @Environment(\.dismiss) private var dismiss
-
-    var body: some View {
-        TextEditor(text: $prompt)
-            .font(.system(.body, design: .monospaced))
-            .padding(4)
-            .navigationTitle("Edit Prompt")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .confirmationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
-                }
-            }
     }
 }
 
