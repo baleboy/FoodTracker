@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import AppIntents
 
 struct FailedModel {
     let provider: LLMProvider
@@ -157,6 +158,11 @@ struct ComparisonResultView: View {
         for provider in selectedProviders {
             let preference = ModelPreference(provider: provider)
             modelContext.insert(preference)
+        }
+
+        // Donate intent so the system can suggest meal capture
+        Task {
+            try? await CaptureMealIntent().donate()
         }
 
         dismiss()

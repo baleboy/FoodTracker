@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import AppIntents
 
 struct PhotoCaptureView: View {
     @Environment(\.dismiss) private var dismiss
@@ -98,6 +99,10 @@ struct PhotoCaptureView: View {
             )
 
             modelContext.insert(meal)
+
+            // Donate intent so the system can suggest meal capture
+            try? await CaptureMealIntent().donate()
+
             dismiss()
         } catch {
             errorMessage = error.localizedDescription
