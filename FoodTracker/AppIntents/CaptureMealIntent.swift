@@ -12,7 +12,7 @@ struct CaptureMealIntent: AppIntent {
 
     @MainActor
     func perform() async throws -> some IntentResult {
-        AppState.shared.shouldOpenCameraDirectly = true
+        AppState.shared.isDirectCaptureMode = true
         return .result()
     }
 }

@@ -14,9 +14,23 @@ struct FoodTrackerApp: App {
 
     var body: some Scene {
         WindowGroup {
-            ContentView()
+            RootView()
                 .environmentObject(appState)
         }
         .modelContainer(for: [Meal.self, ModelPreference.self, ModelResponseTime.self])
+    }
+}
+
+struct RootView: View {
+    @EnvironmentObject private var appState: AppState
+
+    var body: some View {
+        if appState.isDirectCaptureMode {
+            DirectCaptureFlow {
+                appState.isDirectCaptureMode = false
+            }
+        } else {
+            ContentView()
+        }
     }
 }

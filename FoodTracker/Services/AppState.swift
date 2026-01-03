@@ -9,7 +9,7 @@ import Foundation
 final class AppState: ObservableObject {
     static let shared = AppState()
 
-    @Published var shouldOpenCameraDirectly = false
+    @Published var isDirectCaptureMode = false
 
     private init() {}
 }

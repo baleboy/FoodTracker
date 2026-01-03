@@ -147,6 +147,7 @@ struct CameraView: UIViewControllerRepresentable {
         }
 
         func imagePickerControllerDidCancel(_ picker: UIImagePickerController) {
+            NotificationCenter.default.post(name: .cameraCancelled, object: nil)
             parent.dismiss()
         }
     }

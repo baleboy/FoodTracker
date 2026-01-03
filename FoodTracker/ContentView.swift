@@ -10,7 +10,6 @@ import SwiftData
 import PhotosUI
 
 struct ContentView: View {
-    @EnvironmentObject private var appState: AppState
     @Query(sort: \Meal.timestamp, order: .reverse) private var meals: [Meal]
     @State private var showingSettings = false
     @State private var showingPhotoCapture = false
@@ -111,17 +110,10 @@ struct ContentView: View {
                     .navigationTitle("Settings")
             }
         }
-        .onChange(of: appState.shouldOpenCameraDirectly) { _, shouldOpen in
-            if shouldOpen {
-                showingCamera = true
-                appState.shouldOpenCameraDirectly = false
-            }
-        }
     }
 }
 
 #Preview {
     ContentView()
-        .environmentObject(AppState.shared)
         .modelContainer(for: Meal.self, inMemory: true)
 }
