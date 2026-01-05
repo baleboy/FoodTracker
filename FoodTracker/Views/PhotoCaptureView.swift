@@ -5,7 +5,6 @@
 
 import SwiftUI
 import SwiftData
-import AppIntents
 
 struct PhotoCaptureView: View {
     @Environment(\.dismiss) private var dismiss
@@ -89,19 +88,11 @@ struct PhotoCaptureView: View {
         errorMessage = nil
 
         do {
-            let service = APIKeyManager.shared.createSelectedService()
-            let result = try await service.analyzeMeal(imageData: imageData)
-
-            let meal = Meal(
-                photoData: imageData,
-                response: result,
-                timestamp: captureDate ?? Date()
+            _ = try await MealAnalyzer.analyzeAndSave(
+                imageData: imageData,
+                captureDate: captureDate,
+                modelContext: modelContext
             )
-
-            modelContext.insert(meal)
-
-            // Donate intent so the system can suggest meal capture
-            try? await CaptureMealIntent().donate()
 
             dismiss()
         } catch {

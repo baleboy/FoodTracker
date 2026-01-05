@@ -5,7 +5,6 @@
 
 import SwiftUI
 import SwiftData
-import AppIntents
 
 /// A streamlined capture flow for Action Button / Shortcut launches.
 /// Goes directly to camera with no intermediate UI.
@@ -16,8 +15,10 @@ struct DirectCaptureFlow: View {
 
     @State private var phase: CapturePhase = .camera
     @State private var capturedImageData: Data?
+    @State private var captureDate: Date?
     @State private var isAnalyzing = false
     @State private var errorMessage: String?
+    @State private var showingComparison = false
 
     private enum CapturePhase {
         case camera
@@ -43,10 +44,22 @@ struct DirectCaptureFlow: View {
         }
         .onChange(of: capturedImageData) { _, newData in
             if let data = newData {
-                phase = .analyzing
-                Task {
-                    await analyzeMeal(imageData: data)
+                captureDate = ImageHelpers.extractCaptureDate(from: data)
+                if FastingSettings.shared.comparisonModeEnabled {
+                    showingComparison = true
+                } else {
+                    phase = .analyzing
+                    Task {
+                        await analyzeMeal(imageData: data)
+                    }
                 }
+            }
+        }
+        .fullScreenCover(isPresented: $showingComparison, onDismiss: {
+            onComplete()
+        }) {
+            if let imageData = capturedImageData {
+                ComparisonResultView(imageData: imageData, captureDate: captureDate)
             }
         }
         .onReceive(NotificationCenter.default.publisher(for: .cameraCancelled)) { _ in
@@ -91,22 +104,12 @@ struct DirectCaptureFlow: View {
         isAnalyzing = true
         errorMessage = nil
 
-        let captureDate = ImageHelpers.extractCaptureDate(from: imageData)
-
         do {
-            let service = APIKeyManager.shared.createSelectedService()
-            let result = try await service.analyzeMeal(imageData: imageData)
-
-            let meal = Meal(
-                photoData: imageData,
-                response: result,
-                timestamp: captureDate ?? Date()
+            _ = try await MealAnalyzer.analyzeAndSave(
+                imageData: imageData,
+                captureDate: captureDate,
+                modelContext: modelContext
             )
-
-            modelContext.insert(meal)
-
-            // Donate intent so the system can suggest meal capture
-            try? await CaptureMealIntent().donate()
 
             phase = .done
             onComplete()
