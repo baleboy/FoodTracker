@@ -77,10 +77,24 @@ struct StatsView: View {
             let dayMeals = meals.filter { calendar.isDate($0.timestamp, inSameDayAs: date) }
 
             let calories = dayMeals.reduce(0) { $0 + $1.calorieEstimate }
-            let fastingHours = FastingCalculator.totalFastingHours(
+
+            // Calculate intra-day fasting hours
+            var fastingHours = FastingCalculator.totalFastingHours(
                 for: dayMeals,
                 minimumThreshold: settings.minimumThresholdSeconds
             )
+
+            // Add overnight fast: gap from last meal of previous day to first meal of current day
+            let previousDay = calendar.date(byAdding: .day, value: -1, to: date)!
+            let previousDayMeals = meals.filter { calendar.isDate($0.timestamp, inSameDayAs: previousDay) }
+
+            if let lastMealYesterday = previousDayMeals.max(by: { $0.timestamp < $1.timestamp }),
+               let firstMealToday = dayMeals.min(by: { $0.timestamp < $1.timestamp }) {
+                let overnightGap = firstMealToday.timestamp.timeIntervalSince(lastMealYesterday.timestamp)
+                if overnightGap >= settings.minimumThresholdSeconds {
+                    fastingHours += overnightGap / 3600.0
+                }
+            }
 
             return DayStats(
                 date: date,
