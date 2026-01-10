@@ -6,12 +6,12 @@
 import SwiftUI
 
 struct FastingTimerView: View {
-    let lastMealTimestamp: Date?
+    let lastMeal: Meal?
     @ObservedObject private var settings = FastingSettings.shared
 
     private var targetEndTime: Date? {
-        guard let lastMeal = lastMealTimestamp else { return nil }
-        return lastMeal.addingTimeInterval(settings.fastingTargetHours * 3600)
+        guard let meal = lastMeal else { return nil }
+        return meal.effectiveFastingStartTime.addingTimeInterval(settings.fastingTargetHours * 3600)
     }
 
     private static let timeFormatter: DateFormatter = {
@@ -22,22 +22,48 @@ struct FastingTimerView: View {
 
     var body: some View {
         Group {
-            if let lastMeal = lastMealTimestamp {
+            if let meal = lastMeal {
                 TimelineView(.periodic(from: .now, by: 1.0)) { context in
-                    let elapsed = context.date.timeIntervalSince(lastMeal)
-                    VStack(spacing: 4) {
-                        HStack(spacing: 6) {
-                            Image(systemName: "timer")
-                            Text("Fasting:")
-                            Text(FastingCalculator.formatDuration(elapsed))
-                                .monospacedDigit()
-                        }
-                        .font(.title2.bold())
+                    let isEating = context.date < meal.effectiveFastingStartTime
 
-                        if let target = targetEndTime {
-                            Text("Target: \(Self.timeFormatter.string(from: target))")
-                                .font(.subheadline)
-                                .foregroundStyle(.secondary)
+                    if isEating {
+                        // Eating phase - show countdown until fasting starts
+                        let remaining = meal.effectiveFastingStartTime.timeIntervalSince(context.date)
+                        VStack(spacing: 8) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "fork.knife")
+                                Text("Meal time:")
+                                Text(FastingCalculator.formatDuration(remaining))
+                                    .monospacedDigit()
+                            }
+                            .font(.title2.bold())
+
+                            Button {
+                                meal.startFastingNow()
+                            } label: {
+                                Text("Start Fasting Now")
+                                    .font(.subheadline.bold())
+                            }
+                            .buttonStyle(.borderedProminent)
+                            .tint(.orange)
+                        }
+                    } else {
+                        // Fasting phase - show elapsed fasting time
+                        let elapsed = context.date.timeIntervalSince(meal.effectiveFastingStartTime)
+                        VStack(spacing: 4) {
+                            HStack(spacing: 6) {
+                                Image(systemName: "timer")
+                                Text("Fasting:")
+                                Text(FastingCalculator.formatDuration(elapsed))
+                                    .monospacedDigit()
+                            }
+                            .font(.title2.bold())
+
+                            if let target = targetEndTime {
+                                Text("Target: \(Self.timeFormatter.string(from: target))")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
                         }
                     }
                 }
@@ -54,10 +80,10 @@ struct FastingTimerView: View {
     }
 }
 
-#Preview("With meal") {
-    FastingTimerView(lastMealTimestamp: Date().addingTimeInterval(-3700))
+#Preview("Eating phase") {
+    FastingTimerView(lastMeal: nil) // Would need a proper meal for preview
 }
 
 #Preview("No meals") {
-    FastingTimerView(lastMealTimestamp: nil)
+    FastingTimerView(lastMeal: nil)
 }

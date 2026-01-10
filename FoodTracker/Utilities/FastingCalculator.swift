@@ -35,7 +35,10 @@ enum FastingCalculator {
         var periods: [TimeInterval] = []
 
         for i in 1..<sortedMeals.count {
-            let gap = sortedMeals[i].timestamp.timeIntervalSince(sortedMeals[i - 1].timestamp)
+            // Fasting period is from when previous meal's fasting started to next meal's timestamp
+            let fastingStart = sortedMeals[i - 1].effectiveFastingStartTime
+            let nextMealStart = sortedMeals[i].timestamp
+            let gap = nextMealStart.timeIntervalSince(fastingStart)
             if gap >= minimumThreshold {
                 periods.append(gap)
             }

@@ -27,7 +27,8 @@ enum MealAnalyzer {
         let meal = Meal(
             photoData: imageData,
             response: result,
-            timestamp: captureDate ?? Date()
+            timestamp: captureDate ?? Date(),
+            eatingDurationMinutes: FastingSettings.shared.eatingDurationMinutes
         )
 
         modelContext.insert(meal)
