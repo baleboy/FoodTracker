@@ -21,60 +21,54 @@ struct ContentView: View {
 
 
     var body: some View {
-        TabView(selection: $selectedTab) {
-            NavigationStack {
-                VStack(spacing: 0) {
-                    FastingTimerView()
-                        .padding(.horizontal)
-                        .padding(.vertical, 8)
-                        .frame(maxWidth: .infinity)
-                        .background(Color(.systemGroupedBackground))
+        VStack(spacing: 0) {
+            // Content area
+            Group {
+                if selectedTab == 0 {
+                    NavigationStack {
+                        VStack(spacing: 0) {
+                            FastingTimerView()
+                                .padding(.horizontal)
+                                .padding(.vertical, 8)
+                                .frame(maxWidth: .infinity)
+                                .background(Color(.systemGroupedBackground))
 
-                    MealListView()
-                }
-                .toolbar {
-                    ToolbarItem(placement: .topBarLeading) {
-                        Button(action: { showingSettings = true }) {
-                            Label("Settings", systemImage: "gear")
+                            MealListView()
                         }
-                    }
-                    ToolbarItem(placement: .topBarTrailing) {
-                        HStack(spacing: 16) {
-                            PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
-                                Label("Gallery", systemImage: "photo.on.rectangle")
+                        .toolbar {
+                            ToolbarItem(placement: .topBarLeading) {
+                                Button(action: { showingSettings = true }) {
+                                    Label("Settings", systemImage: "gear")
+                                }
                             }
-
-                            Button {
-                                showingCamera = true
-                            } label: {
-                                Label("Camera", systemImage: "camera")
+                            ToolbarItem(placement: .topBarTrailing) {
+                                PhotosPicker(selection: $selectedPhotoItem, matching: .images) {
+                                    Label("Gallery", systemImage: "photo.on.rectangle")
+                                }
                             }
                         }
-                    }
-                }
-                .navigationDestination(for: Meal.self) { meal in
-                    MealDetailView(meal: meal)
-                }
-            }
-            .tabItem {
-                Label("Meals", systemImage: "fork.knife")
-            }
-            .tag(0)
-
-            NavigationStack {
-                StatsView()
-                    .toolbar {
-                        ToolbarItem(placement: .topBarLeading) {
-                            Button(action: { showingSettings = true }) {
-                                Label("Settings", systemImage: "gear")
-                            }
+                        .navigationDestination(for: Meal.self) { meal in
+                            MealDetailView(meal: meal)
                         }
                     }
+                } else {
+                    NavigationStack {
+                        StatsView()
+                            .toolbar {
+                                ToolbarItem(placement: .topBarLeading) {
+                                    Button(action: { showingSettings = true }) {
+                                        Label("Settings", systemImage: "gear")
+                                    }
+                                }
+                            }
+                    }
+                }
             }
-            .tabItem {
-                Label("Stats", systemImage: "chart.bar")
+
+            // Custom tab bar
+            CustomTabBar(selectedTab: $selectedTab) {
+                showingCamera = true
             }
-            .tag(1)
         }
         .sheet(isPresented: $showingPhotoCapture, onDismiss: {
             selectedPhotoData = nil
