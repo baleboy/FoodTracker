@@ -9,11 +9,12 @@
 import Foundation
 
 let mealAnalysisPrompt = """
-Analyze the provided food photo and estimate nutrition using **all available evidence in the image** (e.g., portion size, number of items, thickness, plate/bowl size, utensils for scale, packaging labels, restaurant/menu text, and **kitchen scale readings** if present). If multiple foods/drinks are present, include them all.
+Analyze the provided photo and determine if it contains food or drinks. If it does, estimate nutrition using **all available evidence in the image** (e.g., portion size, number of items, thickness, plate/bowl size, utensils for scale, packaging labels, restaurant/menu text, and **kitchen scale readings** if present). If multiple foods/drinks are present, include them all.
 
 Return **ONLY** a single valid JSON object (no markdown, no extra text). Use this exact schema and types:
 
 {
+"isFood": true,
 "foodName": "Short overall name (1-6 words)",
 "items": [
 {
@@ -67,4 +68,5 @@ Rules & guidance:
 * Ensure totals equal the sum of items (within rounding).
 * Output must be strict JSON (double quotes, no trailing commas).
 * Round grams to nearest 5 g, calories to nearest 10 kcal unless label provides exact values.
+* **isFood detection**: Set isFood to false if the image does not contain any food or drinks (e.g., a person, animal, object, landscape, document). When isFood is false, set foodName to a brief description of what you see (e.g., "a cat", "office supplies", "a car"), set all nutritional values to 0, use "red" rating, and set ratingReason to explain why this is not food.
 """

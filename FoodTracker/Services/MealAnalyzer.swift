@@ -24,6 +24,10 @@ enum MealAnalyzer {
         let service = APIKeyManager.shared.createSelectedService()
         let result = try await service.analyzeMeal(imageData: imageData)
 
+        guard result.isFood else {
+            throw LLMError.notFood(description: result.foodName)
+        }
+
         let meal = Meal(
             photoData: imageData,
             response: result,

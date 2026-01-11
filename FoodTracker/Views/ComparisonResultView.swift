@@ -116,18 +116,32 @@ struct ComparisonResultView: View {
 
         let (successes, failures) = await ComparisonService.shared.analyzeWithAllModels(imageData: imageData)
 
-        results = successes.sorted { $0.provider.rawValue < $1.provider.rawValue }
-        failedModels = failures.map { FailedModel(provider: $0.provider, error: $0.error.localizedDescription) }
-            .sorted { $0.provider.rawValue < $1.provider.rawValue }
+        // Separate food results from non-food results
+        let foodResults = successes.filter { $0.response.isFood }
+        let nonFoodResults = successes.filter { !$0.response.isFood }
 
-        // Save response times for successful models
+        results = foodResults.sorted { $0.provider.rawValue < $1.provider.rawValue }
+
+        // Add non-food results to failed models
+        var allFailed = failures.map { FailedModel(provider: $0.provider, error: $0.error.localizedDescription) }
+        for nonFood in nonFoodResults {
+            allFailed.append(FailedModel(provider: nonFood.provider, error: "Not food: \(nonFood.response.foodName)"))
+        }
+        failedModels = allFailed.sorted { $0.provider.rawValue < $1.provider.rawValue }
+
+        // Save response times for successful models (including non-food)
         for result in successes {
             let responseTime = ModelResponseTime(provider: result.provider, responseTime: result.duration)
             modelContext.insert(responseTime)
         }
 
-        if successes.isEmpty && !failures.isEmpty {
-            errorMessage = failures.map { "\($0.provider.rawValue): \($0.error.localizedDescription)" }.joined(separator: "\n")
+        if foodResults.isEmpty {
+            if !nonFoodResults.isEmpty {
+                let descriptions = nonFoodResults.map { $0.response.foodName }.joined(separator: ", ")
+                errorMessage = "This doesn't appear to be food: \(descriptions)"
+            } else if !failures.isEmpty {
+                errorMessage = failures.map { "\($0.provider.rawValue): \($0.error.localizedDescription)" }.joined(separator: "\n")
+            }
         }
 
         isLoading = false

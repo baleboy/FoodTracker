@@ -59,6 +59,7 @@ struct UncertaintyInfo: Codable, Equatable {
 // MARK: - Meal Analysis Response
 
 struct MealAnalysisResponse: Codable {
+    let isFood: Bool
     let foodName: String
     let items: [FoodItem]
     let totals: NutritionTotals
@@ -95,6 +96,7 @@ extension MealAnalysisResponse {
         )
 
         return MealAnalysisResponse(
+            isFood: true,
             foodName: foodName,
             items: [item],
             totals: NutritionTotals(
@@ -130,6 +132,7 @@ enum LLMError: Error, LocalizedError {
     case mlModelNotAvailable
     case mlClassificationFailed
     case foodNotRecognized
+    case notFood(description: String)
 
     var errorDescription: String? {
         switch self {
@@ -151,6 +154,8 @@ enum LLMError: Error, LocalizedError {
             return "Failed to classify the image."
         case .foodNotRecognized:
             return "Could not recognize the food. Try using Claude or OpenAI instead."
+        case .notFood(let description):
+            return "This doesn't appear to be food: \(description)"
         }
     }
 }
