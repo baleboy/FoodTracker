@@ -27,11 +27,15 @@ enum MealAnalyzer {
         let meal = Meal(
             photoData: imageData,
             response: result,
-            timestamp: captureDate ?? Date(),
-            eatingDurationMinutes: FastingSettings.shared.eatingDurationMinutes
+            timestamp: captureDate ?? Date()
         )
 
         modelContext.insert(meal)
+
+        // If currently fasting, start the eating window
+        if FastingSettings.shared.isFasting {
+            FastingSettings.shared.startEatingWindow()
+        }
 
         // Donate intent so the system can suggest meal capture
         try? await CaptureMealIntent().donate()

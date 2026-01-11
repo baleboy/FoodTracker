@@ -5,6 +5,7 @@
 
 import Foundation
 
+@MainActor
 final class FastingSettings: ObservableObject {
     static let shared = FastingSettings()
 
@@ -12,12 +13,12 @@ final class FastingSettings: ObservableObject {
     private let fastingTargetKey = "fasting-target-hours"
     private let calorieTargetKey = "calorie-target"
     private let comparisonModeKey = "comparison-mode-enabled"
-    private let eatingDurationKey = "eating-duration-minutes"
+    private let eatingWindowStartKey = "eating-window-start"
+    private let fastingStartKey = "fasting-start"
 
     private let defaultThreshold: Double = 4.0
     private let defaultFastingTarget: Double = 16.0
     private let defaultCalorieTarget: Int = 2000
-    private let defaultEatingDuration: Int = 30
 
     @Published var minimumThresholdHours: Double {
         didSet {
@@ -43,14 +44,80 @@ final class FastingSettings: ObservableObject {
         }
     }
 
-    @Published var eatingDurationMinutes: Int {
+    /// When the current eating window started (nil if currently fasting)
+    @Published var eatingWindowStart: Date? {
         didSet {
-            UserDefaults.standard.set(eatingDurationMinutes, forKey: eatingDurationKey)
+            if let date = eatingWindowStart {
+                UserDefaults.standard.set(date, forKey: eatingWindowStartKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: eatingWindowStartKey)
+            }
+        }
+    }
+
+    /// When fasting started (nil if currently in eating window)
+    @Published var fastingStart: Date? {
+        didSet {
+            if let date = fastingStart {
+                UserDefaults.standard.set(date, forKey: fastingStartKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: fastingStartKey)
+            }
         }
     }
 
     var minimumThresholdSeconds: TimeInterval {
         minimumThresholdHours * 3600
+    }
+
+    /// Eating window duration in hours (24 - fasting target)
+    var eatingWindowHours: Double {
+        24.0 - fastingTargetHours
+    }
+
+    /// Eating window duration in seconds
+    var eatingWindowSeconds: TimeInterval {
+        eatingWindowHours * 3600
+    }
+
+    /// Whether currently in fasting state
+    var isFasting: Bool {
+        fastingStart != nil && eatingWindowStart == nil
+    }
+
+    /// Whether currently in eating window
+    var isEating: Bool {
+        eatingWindowStart != nil && fastingStart == nil
+    }
+
+    /// Start the eating window (called when first meal photo is taken while fasting)
+    func startEatingWindow() {
+        fastingStart = nil
+        eatingWindowStart = Date()
+    }
+
+    /// Start fasting (called when user taps "Start Fasting" button)
+    func startFasting() {
+        eatingWindowStart = nil
+        fastingStart = Date()
+    }
+
+    /// Time remaining in eating window (negative if overshoot)
+    func eatingWindowTimeRemaining(at date: Date = Date()) -> TimeInterval {
+        guard let start = eatingWindowStart else { return 0 }
+        let elapsed = date.timeIntervalSince(start)
+        return eatingWindowSeconds - elapsed
+    }
+
+    /// Whether eating window has been exceeded
+    func isEatingWindowExceeded(at date: Date = Date()) -> Bool {
+        eatingWindowTimeRemaining(at: date) < 0
+    }
+
+    /// How much the eating window has been exceeded by (returns 0 if not exceeded)
+    func eatingWindowOvershoot(at date: Date = Date()) -> TimeInterval {
+        let remaining = eatingWindowTimeRemaining(at: date)
+        return remaining < 0 ? -remaining : 0
     }
 
     private init() {
@@ -65,7 +132,34 @@ final class FastingSettings: ObservableObject {
 
         self.comparisonModeEnabled = UserDefaults.standard.bool(forKey: comparisonModeKey)
 
-        let storedEatingDuration = UserDefaults.standard.integer(forKey: eatingDurationKey)
-        self.eatingDurationMinutes = storedEatingDuration > 0 ? storedEatingDuration : defaultEatingDuration
+        let storedEatingWindowStart = UserDefaults.standard.object(forKey: eatingWindowStartKey) as? Date
+        let storedFastingStart = UserDefaults.standard.object(forKey: fastingStartKey) as? Date
+
+        // Validate state: only one of these should be set at a time
+        // If both are set (corrupted state), prefer the more recent one
+        if let eating = storedEatingWindowStart, let fasting = storedFastingStart {
+            if eating > fasting {
+                self.eatingWindowStart = eating
+                self.fastingStart = nil
+                UserDefaults.standard.removeObject(forKey: fastingStartKey)
+            } else {
+                self.eatingWindowStart = nil
+                self.fastingStart = fasting
+                UserDefaults.standard.removeObject(forKey: eatingWindowStartKey)
+            }
+        } else if storedEatingWindowStart != nil {
+            self.eatingWindowStart = storedEatingWindowStart
+            self.fastingStart = nil
+        } else if storedFastingStart != nil {
+            self.eatingWindowStart = nil
+            self.fastingStart = storedFastingStart
+        } else {
+            // No state set, default to fasting
+            // Note: didSet doesn't fire during init, so we must persist manually
+            let now = Date()
+            self.eatingWindowStart = nil
+            self.fastingStart = now
+            UserDefaults.standard.set(now, forKey: fastingStartKey)
+        }
     }
 }

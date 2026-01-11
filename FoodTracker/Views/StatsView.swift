@@ -90,8 +90,7 @@ struct StatsView: View {
 
             if let lastMealYesterday = previousDayMeals.max(by: { $0.timestamp < $1.timestamp }),
                let firstMealToday = dayMeals.min(by: { $0.timestamp < $1.timestamp }) {
-                // Overnight fasting starts when yesterday's last meal's fasting starts
-                let overnightGap = firstMealToday.timestamp.timeIntervalSince(lastMealYesterday.effectiveFastingStartTime)
+                let overnightGap = firstMealToday.timestamp.timeIntervalSince(lastMealYesterday.timestamp)
                 if overnightGap >= settings.minimumThresholdSeconds {
                     fastingHours += overnightGap / 3600.0
                 }

@@ -39,11 +39,8 @@ final class Meal {
     var foodName: String
     var timestamp: Date
 
-    // Eating duration in minutes before fasting starts (default 30)
-    // Note: Default value required for SwiftData migration of existing records
+    // Legacy properties kept for SwiftData migration compatibility
     var eatingDurationMinutes: Int = 30
-
-    // When fasting actually starts (can be earlier if user taps "Start Fasting Now")
     var fastingStartTime: Date? = nil
 
     // Rich nutritional data stored as JSON
@@ -60,33 +57,12 @@ final class Meal {
         }
     }
 
-    /// The effective time when fasting starts.
-    /// If fastingStartTime is set (user tapped "Start Fasting Now"), use that.
-    /// Otherwise, fasting starts after the eating duration.
-    var effectiveFastingStartTime: Date {
-        if let fastingStart = fastingStartTime {
-            return fastingStart
-        }
-        return timestamp.addingTimeInterval(TimeInterval(eatingDurationMinutes * 60))
-    }
-
-    /// Whether the meal is still in the "eating" phase (before fasting starts)
-    var isInEatingPhase: Bool {
-        Date() < effectiveFastingStartTime
-    }
-
-    /// Time remaining in the eating phase (returns 0 if already fasting)
-    var eatingTimeRemaining: TimeInterval {
-        max(0, effectiveFastingStartTime.timeIntervalSince(Date()))
-    }
-
     init(
         photoData: Data,
         calorieEstimate: Int,
         rating: MealRating,
         foodName: String,
         timestamp: Date = Date(),
-        eatingDurationMinutes: Int = 30,
         nutritionData: MealNutritionData? = nil
     ) {
         self.id = UUID()
@@ -95,8 +71,6 @@ final class Meal {
         self.rating = rating
         self.foodName = foodName
         self.timestamp = timestamp
-        self.eatingDurationMinutes = eatingDurationMinutes
-        self.fastingStartTime = nil
         self.nutritionDataJSON = try? JSONEncoder().encode(nutritionData)
     }
 
@@ -104,8 +78,7 @@ final class Meal {
     convenience init(
         photoData: Data,
         response: MealAnalysisResponse,
-        timestamp: Date = Date(),
-        eatingDurationMinutes: Int = 30
+        timestamp: Date = Date()
     ) {
         let rating = MealRating(rawValue: response.rating) ?? .yellow
         let nutritionData = MealNutritionData(from: response)
@@ -116,14 +89,8 @@ final class Meal {
             rating: rating,
             foodName: response.foodName,
             timestamp: timestamp,
-            eatingDurationMinutes: eatingDurationMinutes,
             nutritionData: nutritionData
         )
-    }
-
-    /// Start fasting immediately by setting the fasting start time to now
-    func startFastingNow() {
-        fastingStartTime = Date()
     }
 }
 

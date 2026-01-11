@@ -19,15 +19,12 @@ struct ContentView: View {
     @State private var selectedPhotoData: Data?
     @State private var cameraImageData: Data?
 
-    private var lastMeal: Meal? {
-        meals.first
-    }
 
     var body: some View {
         TabView(selection: $selectedTab) {
             NavigationStack {
                 VStack(spacing: 0) {
-                    FastingTimerView(lastMeal: lastMeal)
+                    FastingTimerView()
                         .padding(.horizontal)
                         .padding(.vertical, 8)
                         .frame(maxWidth: .infinity)

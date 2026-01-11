@@ -6,13 +6,7 @@
 import SwiftUI
 
 struct FastingTimerView: View {
-    let lastMeal: Meal?
     @ObservedObject private var settings = FastingSettings.shared
-
-    private var targetEndTime: Date? {
-        guard let meal = lastMeal else { return nil }
-        return meal.effectiveFastingStartTime.addingTimeInterval(settings.fastingTargetHours * 3600)
-    }
 
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -21,69 +15,104 @@ struct FastingTimerView: View {
     }()
 
     var body: some View {
-        Group {
-            if let meal = lastMeal {
-                TimelineView(.periodic(from: .now, by: 1.0)) { context in
-                    let isEating = context.date < meal.effectiveFastingStartTime
-
-                    if isEating {
-                        // Eating phase - show countdown until fasting starts
-                        let remaining = meal.effectiveFastingStartTime.timeIntervalSince(context.date)
-                        VStack(spacing: 8) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "fork.knife")
-                                Text("Meal time:")
-                                Text(FastingCalculator.formatDuration(remaining))
-                                    .monospacedDigit()
-                            }
-                            .font(.title2.bold())
-
-                            Button {
-                                meal.startFastingNow()
-                            } label: {
-                                Text("Start Fasting Now")
-                                    .font(.subheadline.bold())
-                            }
-                            .buttonStyle(.borderedProminent)
-                            .tint(.orange)
-                        }
-                    } else {
-                        // Fasting phase - show elapsed fasting time
-                        let elapsed = context.date.timeIntervalSince(meal.effectiveFastingStartTime)
-                        VStack(spacing: 4) {
-                            HStack(spacing: 6) {
-                                Image(systemName: "timer")
-                                Text("Fasting:")
-                                Text(FastingCalculator.formatDuration(elapsed))
-                                    .monospacedDigit()
-                            }
-                            .font(.title2.bold())
-
-                            if let target = targetEndTime {
-                                Text("Target: \(Self.timeFormatter.string(from: target))")
-                                    .font(.subheadline)
-                                    .foregroundStyle(.secondary)
-                            }
-                        }
-                    }
-                }
+        TimelineView(.periodic(from: .now, by: 1.0)) { context in
+            if settings.isEating {
+                eatingWindowView(at: context.date)
+            } else if settings.isFasting {
+                fastingView(at: context.date)
             } else {
-                HStack(spacing: 6) {
-                    Image(systemName: "timer")
-                        .foregroundStyle(.secondary)
-                    Text("No meals logged")
-                        .foregroundStyle(.secondary)
-                }
-                .font(.title2.bold())
+                // Fallback - should not happen
+                noStateView
             }
         }
     }
+
+    @ViewBuilder
+    private func eatingWindowView(at date: Date) -> some View {
+        let remaining = settings.eatingWindowTimeRemaining(at: date)
+        let isExceeded = remaining < 0
+
+        VStack(spacing: 8) {
+            if isExceeded {
+                // Overshoot state - eating window exceeded
+                HStack(spacing: 6) {
+                    Image(systemName: "exclamationmark.triangle.fill")
+                        .foregroundStyle(.red)
+                    Text("Over by:")
+                    Text(FastingCalculator.formatDuration(-remaining))
+                        .monospacedDigit()
+                }
+                .font(.title2.bold())
+                .foregroundStyle(.red)
+
+                Text("Eating window exceeded")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            } else {
+                // Normal eating window countdown
+                HStack(spacing: 6) {
+                    Image(systemName: "fork.knife")
+                    Text("Eating window:")
+                    Text(FastingCalculator.formatDuration(remaining))
+                        .monospacedDigit()
+                }
+                .font(.title2.bold())
+
+                if let endTime = settings.eatingWindowStart?.addingTimeInterval(settings.eatingWindowSeconds) {
+                    Text("Closes: \(Self.timeFormatter.string(from: endTime))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Button {
+                settings.startFasting()
+            } label: {
+                Text("Start Fasting")
+                    .font(.subheadline.bold())
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(isExceeded ? .red : .orange)
+        }
+    }
+
+    @ViewBuilder
+    private func fastingView(at date: Date) -> some View {
+        let elapsed = date.timeIntervalSince(settings.fastingStart ?? date)
+        let targetEndTime = settings.fastingStart?.addingTimeInterval(settings.fastingTargetHours * 3600)
+
+        VStack(spacing: 4) {
+            HStack(spacing: 6) {
+                Image(systemName: "timer")
+                Text("Fasting:")
+                Text(FastingCalculator.formatDuration(elapsed))
+                    .monospacedDigit()
+            }
+            .font(.title2.bold())
+
+            if let target = targetEndTime {
+                Text("Target: \(Self.timeFormatter.string(from: target))")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+            }
+        }
+    }
+
+    private var noStateView: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "timer")
+                .foregroundStyle(.secondary)
+            Text("No tracking active")
+                .foregroundStyle(.secondary)
+        }
+        .font(.title2.bold())
+    }
 }
 
-#Preview("Eating phase") {
-    FastingTimerView(lastMeal: nil) // Would need a proper meal for preview
+#Preview("Eating window") {
+    FastingTimerView()
 }
 
-#Preview("No meals") {
-    FastingTimerView(lastMeal: nil)
+#Preview("Fasting") {
+    FastingTimerView()
 }
