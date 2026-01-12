@@ -174,6 +174,11 @@ struct ComparisonResultView: View {
             modelContext.insert(preference)
         }
 
+        // If currently fasting, start the eating window
+        if FastingSettings.shared.isFasting {
+            FastingSettings.shared.startEatingWindow()
+        }
+
         // Donate intent so the system can suggest meal capture
         Task {
             try? await CaptureMealIntent().donate()
