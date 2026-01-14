@@ -12,6 +12,8 @@ final class FastingSettings: ObservableObject {
     private let thresholdKey = "fasting-minimum-threshold-hours"
     private let fastingTargetKey = "fasting-target-hours"
     private let calorieTargetKey = "calorie-target"
+    private let caffeineTargetKey = "caffeine-target"
+    private let fastBreakingCalorieThresholdKey = "fast-breaking-calorie-threshold"
     private let comparisonModeKey = "comparison-mode-enabled"
     private let eatingWindowStartKey = "eating-window-start"
     private let fastingStartKey = "fasting-start"
@@ -19,6 +21,8 @@ final class FastingSettings: ObservableObject {
     private let defaultThreshold: Double = 4.0
     private let defaultFastingTarget: Double = 16.0
     private let defaultCalorieTarget: Int = 2000
+    private let defaultCaffeineTarget: Int = 400  // FDA recommended max daily intake
+    private let defaultFastBreakingCalorieThreshold: Int = 50  // Calories below this don't break fast
 
     @Published var minimumThresholdHours: Double {
         didSet {
@@ -35,6 +39,18 @@ final class FastingSettings: ObservableObject {
     @Published var calorieTarget: Int {
         didSet {
             UserDefaults.standard.set(calorieTarget, forKey: calorieTargetKey)
+        }
+    }
+
+    @Published var caffeineTarget: Int {
+        didSet {
+            UserDefaults.standard.set(caffeineTarget, forKey: caffeineTargetKey)
+        }
+    }
+
+    @Published var fastBreakingCalorieThreshold: Int {
+        didSet {
+            UserDefaults.standard.set(fastBreakingCalorieThreshold, forKey: fastBreakingCalorieThresholdKey)
         }
     }
 
@@ -129,6 +145,12 @@ final class FastingSettings: ObservableObject {
 
         let storedCalorieTarget = UserDefaults.standard.integer(forKey: calorieTargetKey)
         self.calorieTarget = storedCalorieTarget > 0 ? storedCalorieTarget : defaultCalorieTarget
+
+        let storedCaffeineTarget = UserDefaults.standard.integer(forKey: caffeineTargetKey)
+        self.caffeineTarget = storedCaffeineTarget > 0 ? storedCaffeineTarget : defaultCaffeineTarget
+
+        let storedFastBreakingThreshold = UserDefaults.standard.integer(forKey: fastBreakingCalorieThresholdKey)
+        self.fastBreakingCalorieThreshold = storedFastBreakingThreshold > 0 ? storedFastBreakingThreshold : defaultFastBreakingCalorieThreshold
 
         self.comparisonModeEnabled = UserDefaults.standard.bool(forKey: comparisonModeKey)
 

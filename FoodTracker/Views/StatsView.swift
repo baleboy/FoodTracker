@@ -11,8 +11,10 @@ struct DayStats: Identifiable {
     let id = UUID()
     let date: Date
     let calories: Int
+    let caffeineMg: Int
     let fastingHours: Double
     let metCalorieTarget: Bool
+    let metCaffeineTarget: Bool
     let metFastingTarget: Bool
 
     var dayLabel: String {
@@ -78,6 +80,11 @@ struct StatsView: View {
 
             let calories = dayMeals.reduce(0) { $0 + $1.calorieEstimate }
 
+            // Calculate caffeine from nutrition data
+            let caffeineMg = dayMeals.reduce(0) { total, meal in
+                total + Int(meal.nutritionData?.totals.micros.caffeineMg ?? 0)
+            }
+
             // Calculate intra-day fasting hours
             var fastingHours = FastingCalculator.totalFastingHours(
                 for: dayMeals,
@@ -99,8 +106,10 @@ struct StatsView: View {
             return DayStats(
                 date: date,
                 calories: calories,
+                caffeineMg: caffeineMg,
                 fastingHours: fastingHours,
                 metCalorieTarget: calories <= settings.calorieTarget && calories > 0,
+                metCaffeineTarget: caffeineMg <= settings.caffeineTarget,
                 metFastingTarget: fastingHours >= settings.fastingTargetHours
             )
         }
@@ -162,6 +171,30 @@ struct StatsView: View {
                     .frame(height: 200)
 
                     Text("Target: \(settings.calorieTarget) cal or less")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Caffeine")
+                        .font(.headline)
+
+                    Chart(weekStats) { stat in
+                        BarMark(
+                            x: .value("Day", stat.dayLabel),
+                            y: .value("Caffeine", stat.caffeineMg)
+                        )
+                        .foregroundStyle(stat.metCaffeineTarget ? Color.green : Color.red)
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading)
+                    }
+                    .frame(height: 200)
+
+                    Text("Target: \(settings.caffeineTarget) mg or less")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

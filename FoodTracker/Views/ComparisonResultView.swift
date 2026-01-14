@@ -174,8 +174,9 @@ struct ComparisonResultView: View {
             modelContext.insert(preference)
         }
 
-        // If currently fasting, start the eating window
-        if FastingSettings.shared.isFasting {
+        // If currently fasting and meal has significant calories, start the eating window
+        // Low-calorie items like black coffee don't break the fast
+        if FastingSettings.shared.isFasting && meal.calorieEstimate >= FastingSettings.shared.fastBreakingCalorieThreshold {
             FastingSettings.shared.startEatingWindow()
         }
 

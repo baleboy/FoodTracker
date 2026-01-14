@@ -53,6 +53,40 @@ struct SettingsView: View {
                     in: 500...5000,
                     step: 100
                 )
+
+                VStack(alignment: .leading, spacing: 4) {
+                    Stepper(
+                        "Caffeine: \(fastingSettings.caffeineTarget) mg",
+                        value: Binding(
+                            get: { Double(fastingSettings.caffeineTarget) },
+                            set: { fastingSettings.caffeineTarget = Int($0) }
+                        ),
+                        in: 100...800,
+                        step: 50
+                    )
+                    Text("FDA recommends max 400mg/day for healthy adults")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
+            Section {
+                VStack(alignment: .leading, spacing: 4) {
+                    Stepper(
+                        "Fast-breaking threshold: \(fastingSettings.fastBreakingCalorieThreshold) cal",
+                        value: Binding(
+                            get: { Double(fastingSettings.fastBreakingCalorieThreshold) },
+                            set: { fastingSettings.fastBreakingCalorieThreshold = Int($0) }
+                        ),
+                        in: 0...100,
+                        step: 10
+                    )
+                    Text("Items below this calorie count won't break your fast")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            } header: {
+                Text("Fasting Exceptions")
             }
 
             Section("AI Provider") {

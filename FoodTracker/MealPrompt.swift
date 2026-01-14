@@ -25,7 +25,7 @@ Return **ONLY** a single valid JSON object (no markdown, no extra text). Use thi
 "estimatedVolumeML": 0,
 "caloriesKcal": 0,
 "macros": { "proteinG": 0, "carbsG": 0, "fatG": 0, "fiberG": 0, "sugarG": 0 },
-"micros": { "sodiumMg": 0, "cholesterolMg": 0, "satFatG": 0 },
+"micros": { "sodiumMg": 0, "cholesterolMg": 0, "satFatG": 0, "caffeineMg": 0 },
 "confidence": 0.0,
 "evidence": [
 "Short bullet-like phrases describing visual cues used (e.g., 'scale shows 182 g', 'standard 24 cm dinner plate', '12 oz can visible')"
@@ -38,7 +38,7 @@ Return **ONLY** a single valid JSON object (no markdown, no extra text). Use thi
 "totals": {
 "caloriesKcal": 0,
 "macros": { "proteinG": 0, "carbsG": 0, "fatG": 0, "fiberG": 0, "sugarG": 0 },
-"micros": { "sodiumMg": 0, "cholesterolMg": 0, "satFatG": 0 }
+"micros": { "sodiumMg": 0, "cholesterolMg": 0, "satFatG": 0, "caffeineMg": 0 }
 },
 "rating": "green|yellow|red",
 "ratingReason": "One short sentence (why this rating)",
@@ -69,4 +69,5 @@ Rules & guidance:
 * Output must be strict JSON (double quotes, no trailing commas).
 * Round grams to nearest 5 g, calories to nearest 10 kcal unless label provides exact values.
 * **isFood detection**: Set isFood to false if the image does not contain any food or drinks (e.g., a person, animal, object, landscape, document). When isFood is false, set foodName to a brief description of what you see (e.g., "a cat", "office supplies", "a car"), set all nutritional values to 0, use "red" rating, and set ratingReason to explain why this is not food.
+* **Caffeine estimation**: Estimate caffeine content (caffeineMg) for beverages and foods that contain it. Reference values: brewed coffee ~95mg/8oz, espresso ~63mg/shot, black tea ~47mg/8oz, green tea ~28mg/8oz, cola ~34mg/12oz, energy drinks vary (check label if visible), dark chocolate ~12mg/oz. Set to 0 for non-caffeinated items.
 """
