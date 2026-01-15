@@ -32,7 +32,7 @@ final class Meal {
     var id: UUID
 
     @Attribute(.externalStorage)
-    var photoData: Data
+    var photoData: Data?
 
     var calorieEstimate: Int
     var rating: MealRating
@@ -58,7 +58,7 @@ final class Meal {
     }
 
     init(
-        photoData: Data,
+        photoData: Data?,
         calorieEstimate: Int,
         rating: MealRating,
         foodName: String,
@@ -76,7 +76,7 @@ final class Meal {
 
     /// Convenience initializer from MealAnalysisResponse
     convenience init(
-        photoData: Data,
+        photoData: Data?,
         response: MealAnalysisResponse,
         timestamp: Date = Date()
     ) {

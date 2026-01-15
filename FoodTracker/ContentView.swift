@@ -14,6 +14,7 @@ struct ContentView: View {
     @State private var showingSettings = false
     @State private var showingPhotoCapture = false
     @State private var showingCamera = false
+    @State private var showingTextEntry = false
     @State private var selectedTab = 0
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedPhotoData: Data?
@@ -66,8 +67,13 @@ struct ContentView: View {
             }
 
             // Custom tab bar
-            CustomTabBar(selectedTab: $selectedTab) {
-                showingCamera = true
+            CustomTabBar(selectedTab: $selectedTab) { option in
+                switch option {
+                case .camera:
+                    showingCamera = true
+                case .text:
+                    showingTextEntry = true
+                }
             }
         }
         .sheet(isPresented: $showingPhotoCapture, onDismiss: {
@@ -100,6 +106,9 @@ struct ContentView: View {
                 SettingsView()
                     .navigationTitle("Settings")
             }
+        }
+        .sheet(isPresented: $showingTextEntry) {
+            TextMealEntryView()
         }
     }
 }

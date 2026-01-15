@@ -77,6 +77,10 @@ actor MLFoodService: LLMService {
         )
     }
 
+    func analyzeMealDescription(_ description: String) async throws -> MealAnalysisResponse {
+        throw LLMError.textAnalysisNotSupported
+    }
+
     private func classifyImage(_ cgImage: CGImage, request: VNCoreMLRequest) async throws -> [VNClassificationObservation] {
         try await withCheckedThrowingContinuation { continuation in
             let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])

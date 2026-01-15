@@ -11,12 +11,28 @@ struct MealDetailView: View {
     var body: some View {
         ScrollView {
             VStack(spacing: 20) {
-                if let image = UIImage(data: meal.photoData) {
+                if let photoData = meal.photoData,
+                   let image = UIImage(data: photoData) {
                     Image(uiImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(maxHeight: 400)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
+                } else if meal.photoData == nil {
+                    // Text-based entry - show icon
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(.secondary.opacity(0.1))
+                        .frame(height: 120)
+                        .overlay {
+                            VStack(spacing: 8) {
+                                Image(systemName: "square.and.pencil")
+                                    .font(.system(size: 40))
+                                    .foregroundStyle(.secondary)
+                                Text("Logged via text")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
                 }
 
                 RatingBadge(rating: meal.rating)

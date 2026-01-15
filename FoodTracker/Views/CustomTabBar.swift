@@ -7,9 +7,16 @@
 
 import SwiftUI
 
+enum MealEntryOption {
+    case camera
+    case text
+}
+
 struct CustomTabBar: View {
     @Binding var selectedTab: Int
-    let onCameraTap: () -> Void
+    let onMealEntry: (MealEntryOption) -> Void
+
+    @State private var showingEntryOptions = false
 
     var body: some View {
         HStack {
@@ -24,20 +31,29 @@ struct CustomTabBar: View {
 
             Spacer()
 
-            // Center camera button
-            Button(action: onCameraTap) {
+            // Center add button
+            Button(action: { showingEntryOptions = true }) {
                 ZStack {
                     Circle()
                         .fill(Color.accentColor)
                         .frame(width: 56, height: 56)
                         .shadow(color: Color.accentColor.opacity(0.3), radius: 4, y: 2)
 
-                    Image(systemName: "camera.fill")
-                        .font(.system(size: 24))
+                    Image(systemName: "plus")
+                        .font(.system(size: 24, weight: .semibold))
                         .foregroundColor(.white)
                 }
             }
             .offset(y: -16)
+            .confirmationDialog("Log a meal", isPresented: $showingEntryOptions) {
+                Button("Take Photo") {
+                    onMealEntry(.camera)
+                }
+                Button("Describe Meal") {
+                    onMealEntry(.text)
+                }
+                Button("Cancel", role: .cancel) {}
+            }
 
             Spacer()
 
@@ -85,6 +101,6 @@ struct TabBarButton: View {
 #Preview {
     VStack {
         Spacer()
-        CustomTabBar(selectedTab: .constant(0), onCameraTap: {})
+        CustomTabBar(selectedTab: .constant(0), onMealEntry: { _ in })
     }
 }

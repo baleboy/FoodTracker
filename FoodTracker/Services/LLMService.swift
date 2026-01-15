@@ -150,6 +150,7 @@ enum LLMError: Error, LocalizedError {
     case mlClassificationFailed
     case foodNotRecognized
     case notFood(description: String)
+    case textAnalysisNotSupported
 
     var errorDescription: String? {
         switch self {
@@ -173,10 +174,13 @@ enum LLMError: Error, LocalizedError {
             return "Could not recognize the food. Try using Claude or OpenAI instead."
         case .notFood(let description):
             return "This doesn't appear to be food: \(description)"
+        case .textAnalysisNotSupported:
+            return "Text-based meal analysis is not supported with On-Device ML. Please use Claude, OpenAI, or Gemini."
         }
     }
 }
 
 protocol LLMService: Sendable {
     func analyzeMeal(imageData: Data) async throws -> MealAnalysisResponse
+    func analyzeMealDescription(_ description: String) async throws -> MealAnalysisResponse
 }

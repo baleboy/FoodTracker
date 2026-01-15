@@ -72,6 +72,59 @@ actor GeminiService: LLMService {
         }
     }
 
+    func analyzeMealDescription(_ description: String) async throws -> MealAnalysisResponse {
+        guard let apiKey = APIKeyManager.shared.getAPIKey(for: .gemini) else {
+            throw LLMError.invalidAPIKey
+        }
+
+        let prompt = textMealAnalysisPrompt.replacingOccurrences(of: "{{DESCRIPTION}}", with: description)
+
+        let requestBody: [String: Any] = [
+            "contents": [
+                [
+                    "parts": [
+                        [
+                            "text": prompt
+                        ]
+                    ]
+                ]
+            ],
+            "generationConfig": [
+                "maxOutputTokens": 1024
+            ]
+        ]
+
+        guard let url = URL(string: "\(baseURL)/\(model):generateContent?key=\(apiKey)") else {
+            throw LLMError.invalidResponse
+        }
+
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+
+        guard let httpResponse = response as? HTTPURLResponse else {
+            throw LLMError.invalidResponse
+        }
+
+        switch httpResponse.statusCode {
+        case 200:
+            return try parseResponse(data)
+        case 400:
+            throw LLMError.invalidAPIKey
+        case 403:
+            throw LLMError.invalidAPIKey
+        case 429:
+            throw LLMError.rateLimited
+        case 500...599:
+            throw LLMError.serverError(httpResponse.statusCode)
+        default:
+            throw LLMError.invalidResponse
+        }
+    }
+
     private func parseResponse(_ data: Data) throws -> MealAnalysisResponse {
         struct GeminiResponse: Codable {
             struct Candidate: Codable {

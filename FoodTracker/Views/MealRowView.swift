@@ -10,13 +10,25 @@ struct MealRowView: View {
 
     var body: some View {
         HStack(spacing: 12) {
-            if let image = UIImage(data: meal.photoData) {
+            if let photoData = meal.photoData,
+               let image = UIImage(data: photoData) {
                 Image(uiImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 60, height: 60)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
+            } else if meal.photoData == nil {
+                // Text-based entry - show pencil icon
+                RoundedRectangle(cornerRadius: 8)
+                    .fill(.secondary.opacity(0.2))
+                    .frame(width: 60, height: 60)
+                    .overlay {
+                        Image(systemName: "square.and.pencil")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                    }
             } else {
+                // Photo exists but failed to load
                 RoundedRectangle(cornerRadius: 8)
                     .fill(.secondary.opacity(0.2))
                     .frame(width: 60, height: 60)
