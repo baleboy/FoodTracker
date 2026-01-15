@@ -5,6 +5,7 @@
 
 import SwiftUI
 import SwiftData
+import Speech
 
 struct TextMealEntryView: View {
     @Environment(\.dismiss) private var dismiss
@@ -14,6 +15,8 @@ struct TextMealEntryView: View {
     @State private var isAnalyzing = false
     @State private var errorMessage: String?
     @State private var showingComparison = false
+    @StateObject private var speechRecognizer = SpeechRecognizer()
+    @State private var hasSpeechPermission: Bool?
     @FocusState private var isTextFieldFocused: Bool
 
     private var trimmedDescription: String {
@@ -27,10 +30,35 @@ struct TextMealEntryView: View {
                     Text("Describe what you ate or drank")
                         .font(.headline)
 
-                    TextField("e.g., large coffee with oat milk and a blueberry muffin", text: $mealDescription, axis: .vertical)
-                        .textFieldStyle(.roundedBorder)
-                        .lineLimit(3...6)
-                        .focused($isTextFieldFocused)
+                    HStack(alignment: .top, spacing: 8) {
+                        TextField("e.g., large coffee with oat milk and a blueberry muffin", text: $mealDescription, axis: .vertical)
+                            .textFieldStyle(.roundedBorder)
+                            .lineLimit(3...6)
+                            .focused($isTextFieldFocused)
+
+                        Button(action: {
+                            toggleSpeechRecognition()
+                        }) {
+                            Image(systemName: speechRecognizer.isRecording ? "mic.fill" : "mic")
+                                .font(.title2)
+                                .foregroundStyle(speechRecognizer.isRecording ? .red : .accentColor)
+                                .frame(width: 44, height: 44)
+                                .background(speechRecognizer.isRecording ? Color.red.opacity(0.1) : Color.accentColor.opacity(0.1))
+                                .clipShape(Circle())
+                        }
+                        .disabled(hasSpeechPermission == false)
+                    }
+
+                    if speechRecognizer.isRecording {
+                        HStack(spacing: 8) {
+                            Circle()
+                                .fill(.red)
+                                .frame(width: 8, height: 8)
+                            Text("Listening...")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
                 }
 
                 if isAnalyzing {
@@ -74,12 +102,31 @@ struct TextMealEntryView: View {
             }
             .onAppear {
                 isTextFieldFocused = true
+                Task {
+                    hasSpeechPermission = await speechRecognizer.requestAuthorization()
+                }
+            }
+            .onChange(of: speechRecognizer.transcript) { _, newValue in
+                if !newValue.isEmpty {
+                    mealDescription = newValue
+                }
             }
             .fullScreenCover(isPresented: $showingComparison, onDismiss: {
                 dismiss()
             }) {
                 TextComparisonResultView(mealDescription: trimmedDescription)
             }
+        }
+    }
+
+    private func toggleSpeechRecognition() {
+        if speechRecognizer.isRecording {
+            speechRecognizer.stopRecording()
+        } else {
+            // Clear previous transcript and start fresh
+            speechRecognizer.transcript = ""
+            isTextFieldFocused = false
+            speechRecognizer.startRecording()
         }
     }
 
