@@ -131,6 +131,9 @@ struct MacrosSummaryCard: View {
                     NutrientRow(label: "Sodium", value: "\(Int(totals.micros.sodiumMg))mg")
                     NutrientRow(label: "Cholesterol", value: "\(Int(totals.micros.cholesterolMg))mg")
                     NutrientRow(label: "Saturated Fat", value: "\(Int(totals.micros.satFatG))g")
+                    if totals.micros.caffeineMg > 0 {
+                        NutrientRow(label: "Caffeine", value: "\(Int(totals.micros.caffeineMg))mg")
+                    }
                 }
             } else {
                 Text("Detailed nutrition data not available")
@@ -244,6 +247,10 @@ struct FoodItemRow: View {
                             Text("C: \(Int(item.macros.carbsG))g")
                             Text("F: \(Int(item.macros.fatG))g")
                         }
+                    }
+
+                    if item.micros.caffeineMg > 0 {
+                        Text("Caffeine: \(Int(item.micros.caffeineMg))mg")
                     }
 
                     ConfidenceBar(confidence: item.confidence)
