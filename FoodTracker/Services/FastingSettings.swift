@@ -17,6 +17,7 @@ final class FastingSettings: ObservableObject {
     private let comparisonModeKey = "comparison-mode-enabled"
     private let eatingWindowStartKey = "eating-window-start"
     private let fastingStartKey = "fasting-start"
+    private let previousEatingWindowStartKey = "previous-eating-window-start"
 
     private let defaultThreshold: Double = 4.0
     private let defaultFastingTarget: Double = 16.0
@@ -82,6 +83,17 @@ final class FastingSettings: ObservableObject {
         }
     }
 
+    /// Previous eating window start (saved when starting a fast, used for cancel)
+    private var previousEatingWindowStart: Date? {
+        didSet {
+            if let date = previousEatingWindowStart {
+                UserDefaults.standard.set(date, forKey: previousEatingWindowStartKey)
+            } else {
+                UserDefaults.standard.removeObject(forKey: previousEatingWindowStartKey)
+            }
+        }
+    }
+
     var minimumThresholdSeconds: TimeInterval {
         minimumThresholdHours * 3600
     }
@@ -115,8 +127,16 @@ final class FastingSettings: ObservableObject {
     /// Start fasting (called when user taps "Start Fasting" button)
     /// - Parameter date: The date/time when fasting started. Defaults to now.
     func startFasting(at date: Date = Date()) {
+        previousEatingWindowStart = eatingWindowStart
         eatingWindowStart = nil
         fastingStart = date
+    }
+
+    /// Cancel the current fast and restore the previous eating window
+    func cancelFasting() {
+        fastingStart = nil
+        eatingWindowStart = previousEatingWindowStart ?? Date()
+        previousEatingWindowStart = nil
     }
 
     /// Time remaining in eating window (negative if overshoot)
@@ -154,6 +174,8 @@ final class FastingSettings: ObservableObject {
         self.fastBreakingCalorieThreshold = storedFastBreakingThreshold > 0 ? storedFastBreakingThreshold : defaultFastBreakingCalorieThreshold
 
         self.comparisonModeEnabled = UserDefaults.standard.bool(forKey: comparisonModeKey)
+
+        self.previousEatingWindowStart = UserDefaults.standard.object(forKey: previousEatingWindowStartKey) as? Date
 
         let storedEatingWindowStart = UserDefaults.standard.object(forKey: eatingWindowStartKey) as? Date
         let storedFastingStart = UserDefaults.standard.object(forKey: fastingStartKey) as? Date

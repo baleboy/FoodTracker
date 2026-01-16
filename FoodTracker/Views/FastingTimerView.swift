@@ -9,6 +9,7 @@ struct FastingTimerView: View {
     @ObservedObject private var settings = FastingSettings.shared
     @State private var showingStartFastingDialog = false
     @State private var selectedFastingStartTime = Date()
+    @State private var showingCancelConfirmation = false
 
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -112,7 +113,7 @@ struct FastingTimerView: View {
                 color: fastingColor(for: progress)
             )
 
-            VStack(alignment: .leading, spacing: 4) {
+            VStack(alignment: .leading, spacing: 8) {
                 HStack(spacing: 6) {
                     Text("Fasting:")
                     Text(FastingCalculator.formatDuration(elapsed))
@@ -124,6 +125,27 @@ struct FastingTimerView: View {
                     Text("Target: \(Self.timeFormatter.string(from: target))")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
+                }
+
+                Button {
+                    showingCancelConfirmation = true
+                } label: {
+                    Text("Cancel Fast")
+                        .font(.subheadline.bold())
+                }
+                .buttonStyle(.bordered)
+                .tint(.red)
+                .confirmationDialog(
+                    "Cancel Fast",
+                    isPresented: $showingCancelConfirmation,
+                    titleVisibility: .visible
+                ) {
+                    Button("Cancel Fast", role: .destructive) {
+                        settings.cancelFasting()
+                    }
+                    Button("Keep Fasting", role: .cancel) {}
+                } message: {
+                    Text("Are you sure you want to cancel your current fast?")
                 }
             }
         }
