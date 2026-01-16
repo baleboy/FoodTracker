@@ -9,6 +9,7 @@ import SwiftUI
 
 enum MealEntryOption {
     case camera
+    case voice
     case text
 }
 
@@ -49,7 +50,10 @@ struct CustomTabBar: View {
                 Button("Take Photo") {
                     onMealEntry(.camera)
                 }
-                Button("Describe Meal") {
+                Button("Voice") {
+                    onMealEntry(.voice)
+                }
+                Button("Type") {
                     onMealEntry(.text)
                 }
                 Button("Cancel", role: .cancel) {}

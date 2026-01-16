@@ -15,6 +15,7 @@ struct ContentView: View {
     @State private var showingPhotoCapture = false
     @State private var showingCamera = false
     @State private var showingTextEntry = false
+    @State private var showingVoiceEntry = false
     @State private var selectedTab = 0
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedPhotoData: Data?
@@ -71,6 +72,8 @@ struct ContentView: View {
                 switch option {
                 case .camera:
                     showingCamera = true
+                case .voice:
+                    showingVoiceEntry = true
                 case .text:
                     showingTextEntry = true
                 }
@@ -109,6 +112,9 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingTextEntry) {
             TextMealEntryView()
+        }
+        .sheet(isPresented: $showingVoiceEntry) {
+            TextMealEntryView(startWithVoice: true)
         }
     }
 }

@@ -11,6 +11,8 @@ struct TextMealEntryView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
 
+    var startWithVoice: Bool = false
+
     @State private var mealDescription: String = ""
     @State private var isAnalyzing = false
     @State private var errorMessage: String?
@@ -100,9 +102,14 @@ struct TextMealEntryView: View {
                 }
             }
             .onAppear {
-                isTextFieldFocused = true
+                if !startWithVoice {
+                    isTextFieldFocused = true
+                }
                 Task {
                     hasSpeechPermission = await speechRecognizer.requestAuthorization()
+                    if startWithVoice && hasSpeechPermission == true {
+                        toggleSpeechRecognition()
+                    }
                 }
             }
             .onChange(of: speechRecognizer.transcript) { _, newValue in
