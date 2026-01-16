@@ -14,7 +14,6 @@ struct TextMealEntryView: View {
     @State private var mealDescription: String = ""
     @State private var isAnalyzing = false
     @State private var errorMessage: String?
-    @State private var showingComparison = false
     @StateObject private var speechRecognizer = SpeechRecognizer()
     @State private var hasSpeechPermission: Bool?
     @FocusState private var isTextFieldFocused: Bool
@@ -111,11 +110,6 @@ struct TextMealEntryView: View {
                     mealDescription = newValue
                 }
             }
-            .fullScreenCover(isPresented: $showingComparison, onDismiss: {
-                dismiss()
-            }) {
-                TextComparisonResultView(mealDescription: trimmedDescription)
-            }
         }
     }
 
@@ -133,12 +127,8 @@ struct TextMealEntryView: View {
     private func submitMeal() {
         guard !trimmedDescription.isEmpty else { return }
 
-        if FastingSettings.shared.comparisonModeEnabled {
-            showingComparison = true
-        } else {
-            Task {
-                await analyzeMeal()
-            }
+        Task {
+            await analyzeMeal()
         }
     }
 
