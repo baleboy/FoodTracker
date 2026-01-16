@@ -9,6 +9,7 @@ import SwiftData
 struct MealListView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Meal.timestamp, order: .reverse) private var meals: [Meal]
+    @ObservedObject private var healthService = HealthKitService.shared
 
     private var groupedMeals: [(date: Date, meals: [Meal])] {
         let calendar = Calendar.current
@@ -46,6 +47,11 @@ struct MealListView: View {
                 )
             }
         }
+        .task {
+            if healthService.isEnabled {
+                await healthService.fetchHealthData()
+            }
+        }
     }
 
     private func deleteMeals(_ mealsInSection: [Meal], at offsets: IndexSet) {
@@ -59,9 +65,19 @@ struct DaySectionHeader: View {
     let date: Date
     let meals: [Meal]
     @ObservedObject private var fastingSettings = FastingSettings.shared
+    @ObservedObject private var healthService = HealthKitService.shared
 
     private var totalCalories: Int {
         meals.reduce(0) { $0 + $1.calorieEstimate }
+    }
+
+    private var burnedCalories: Int? {
+        healthService.activeCaloriesForDate(date)
+    }
+
+    private var netCalories: Int? {
+        guard let burned = burnedCalories else { return nil }
+        return totalCalories - burned
     }
 
     private var fastingStats: (total: Double, longest: TimeInterval?)? {
@@ -92,8 +108,34 @@ struct DaySectionHeader: View {
             HStack {
                 Text(dateText)
                 Spacer()
-                Text("\(totalCalories) cal")
+                if let burned = burnedCalories, let net = netCalories {
+                    HStack(spacing: 8) {
+                        Text("\(totalCalories)")
+                            .foregroundStyle(.primary)
+                        Text("-")
+                            .foregroundStyle(.secondary)
+                        Text("\(burned)")
+                            .foregroundStyle(.orange)
+                        Text("=")
+                            .foregroundStyle(.secondary)
+                        Text("\(net > 0 ? "+" : "")\(net)")
+                            .foregroundStyle(net > 0 ? .red : .green)
+                    }
                     .fontWeight(.semibold)
+                } else {
+                    Text("\(totalCalories) cal")
+                        .fontWeight(.semibold)
+                }
+            }
+
+            if let burned = burnedCalories {
+                HStack(spacing: 4) {
+                    Text("Eaten: \(totalCalories)")
+                    Text("Burned: \(burned)")
+                        .foregroundStyle(.orange)
+                }
+                .font(.caption)
+                .foregroundStyle(.secondary)
             }
 
             if let stats = fastingStats, stats.total > 0 {

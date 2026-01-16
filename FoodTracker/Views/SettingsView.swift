@@ -4,6 +4,7 @@
 //
 
 import SwiftUI
+import HealthKit
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
@@ -17,9 +18,63 @@ struct SettingsView: View {
     @State private var showingSaveConfirmation = false
     @State private var saveError = false
     @ObservedObject private var fastingSettings = FastingSettings.shared
+    @ObservedObject private var healthService = HealthKitService.shared
 
     var body: some View {
         Form {
+            if HealthKitService.isHealthDataAvailable {
+                Section {
+                    if healthService.isEnabled {
+                        HStack {
+                            Text("Apple Health")
+                            Spacer()
+                            Text("Connected")
+                                .foregroundStyle(.green)
+                        }
+
+                        if let weight = healthService.healthData?.bodyWeightKg {
+                            HStack {
+                                Text("Body Weight")
+                                Spacer()
+                                Text(formatWeight(weight))
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        if let calories = healthService.healthData?.activeCaloriesToday {
+                            HStack {
+                                Text("Active Calories Today")
+                                Spacer()
+                                Text("\(calories) cal")
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        Button("Disconnect from Health", role: .destructive) {
+                            healthService.disable()
+                        }
+                    } else {
+                        Button {
+                            Task {
+                                await healthService.requestAuthorization()
+                            }
+                        } label: {
+                            HStack {
+                                Image(systemName: "heart.fill")
+                                    .foregroundStyle(.red)
+                                Text("Connect to Apple Health")
+                            }
+                        }
+
+                        Text("Read activity calories and weight to track your calorie balance.")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                } header: {
+                    Text("Apple Health")
+                }
+            }
+
             Section("Fasting") {
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Minimum Fast Duration")
@@ -193,6 +248,19 @@ struct SettingsView: View {
         } message: {
             Text("Failed to save API key to Keychain.")
         }
+        .task {
+            if healthService.isEnabled {
+                await healthService.fetchHealthData()
+            }
+        }
+    }
+
+    private func formatWeight(_ kg: Double) -> String {
+        let formatter = MeasurementFormatter()
+        formatter.unitOptions = .providedUnit
+        formatter.numberFormatter.maximumFractionDigits = 1
+        let measurement = Measurement(value: kg, unit: UnitMass.kilograms)
+        return formatter.string(from: measurement)
     }
 }
 
