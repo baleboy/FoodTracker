@@ -113,9 +113,10 @@ final class FastingSettings: ObservableObject {
     }
 
     /// Start fasting (called when user taps "Start Fasting" button)
-    func startFasting() {
+    /// - Parameter date: The date/time when fasting started. Defaults to now.
+    func startFasting(at date: Date = Date()) {
         eatingWindowStart = nil
-        fastingStart = Date()
+        fastingStart = date
     }
 
     /// Time remaining in eating window (negative if overshoot)

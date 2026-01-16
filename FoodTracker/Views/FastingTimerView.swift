@@ -7,6 +7,8 @@ import SwiftUI
 
 struct FastingTimerView: View {
     @ObservedObject private var settings = FastingSettings.shared
+    @State private var showingStartFastingDialog = false
+    @State private var selectedFastingStartTime = Date()
 
     private static let timeFormatter: DateFormatter = {
         let formatter = DateFormatter()
@@ -72,13 +74,27 @@ struct FastingTimerView: View {
                 }
 
                 Button {
-                    settings.startFasting()
+                    selectedFastingStartTime = Date()
+                    showingStartFastingDialog = true
                 } label: {
                     Text("Start Fasting")
                         .font(.subheadline.bold())
                 }
                 .buttonStyle(.borderedProminent)
                 .tint(isExceeded ? .red : .orange)
+                .sheet(isPresented: $showingStartFastingDialog) {
+                    StartFastingSheet(
+                        selectedTime: $selectedFastingStartTime,
+                        onConfirm: {
+                            settings.startFasting(at: selectedFastingStartTime)
+                            showingStartFastingDialog = false
+                        },
+                        onCancel: {
+                            showingStartFastingDialog = false
+                        }
+                    )
+                    .presentationDetents([.large])
+                }
             }
         }
     }
@@ -174,10 +190,92 @@ extension FastingTimerView {
     }
 }
 
+// MARK: - Start Fasting Sheet
+
+struct StartFastingSheet: View {
+    @Binding var selectedTime: Date
+    let onConfirm: () -> Void
+    let onCancel: () -> Void
+
+    @State private var selectedDate: Date = Date()
+    @State private var selectedHourMinute: Date = Date()
+
+    var body: some View {
+        NavigationStack {
+            VStack(spacing: 16) {
+                Text("When did you start fasting?")
+                    .font(.headline)
+                    .padding(.top)
+
+                DatePicker(
+                    "Date",
+                    selection: $selectedDate,
+                    in: ...Date(),
+                    displayedComponents: .date
+                )
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+
+                DatePicker(
+                    "Time",
+                    selection: $selectedHourMinute,
+                    displayedComponents: .hourAndMinute
+                )
+                .datePickerStyle(.wheel)
+                .labelsHidden()
+
+                Spacer()
+            }
+            .padding()
+            .navigationTitle("Start Fasting")
+            .navigationBarTitleDisplayMode(.inline)
+            .toolbar {
+                ToolbarItem(placement: .cancellationAction) {
+                    Button("Cancel", action: onCancel)
+                }
+                ToolbarItem(placement: .confirmationAction) {
+                    Button("Start") {
+                        selectedTime = combinedDateTime
+                        onConfirm()
+                    }
+                    .bold()
+                }
+            }
+            .onAppear {
+                selectedDate = selectedTime
+                selectedHourMinute = selectedTime
+            }
+        }
+    }
+
+    private var combinedDateTime: Date {
+        let calendar = Calendar.current
+        let dateComponents = calendar.dateComponents([.year, .month, .day], from: selectedDate)
+        let timeComponents = calendar.dateComponents([.hour, .minute], from: selectedHourMinute)
+
+        var combined = DateComponents()
+        combined.year = dateComponents.year
+        combined.month = dateComponents.month
+        combined.day = dateComponents.day
+        combined.hour = timeComponents.hour
+        combined.minute = timeComponents.minute
+
+        return calendar.date(from: combined) ?? Date()
+    }
+}
+
 #Preview("Eating window") {
     FastingTimerView()
 }
 
 #Preview("Fasting") {
     FastingTimerView()
+}
+
+#Preview("Start Fasting Sheet") {
+    StartFastingSheet(
+        selectedTime: .constant(Date()),
+        onConfirm: {},
+        onCancel: {}
+    )
 }
