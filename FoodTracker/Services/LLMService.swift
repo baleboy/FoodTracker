@@ -78,6 +78,7 @@ struct UncertaintyInfo: Codable, Equatable {
 struct MealAnalysisResponse: Codable {
     let isFood: Bool
     let foodName: String
+    let foodCategory: String
     let items: [FoodItem]
     let totals: NutritionTotals
     let rating: String
@@ -88,6 +89,37 @@ struct MealAnalysisResponse: Codable {
     // Backward compatibility computed properties
     var calorieEstimate: Int { totals.caloriesKcal }
     var reasoning: String { ratingReason }
+
+    // Parse foodCategory string to enum, defaulting to .other
+    var category: FoodCategory {
+        FoodCategory(rawValue: foodCategory) ?? .other
+    }
+
+    // Custom decoder to handle missing foodCategory for backward compatibility
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        isFood = try container.decode(Bool.self, forKey: .isFood)
+        foodName = try container.decode(String.self, forKey: .foodName)
+        foodCategory = try container.decodeIfPresent(String.self, forKey: .foodCategory) ?? "other"
+        items = try container.decode([FoodItem].self, forKey: .items)
+        totals = try container.decode(NutritionTotals.self, forKey: .totals)
+        rating = try container.decode(String.self, forKey: .rating)
+        ratingReason = try container.decode(String.self, forKey: .ratingReason)
+        healthNotes = try container.decode([String].self, forKey: .healthNotes)
+        uncertainty = try container.decode(UncertaintyInfo.self, forKey: .uncertainty)
+    }
+
+    init(isFood: Bool, foodName: String, foodCategory: String, items: [FoodItem], totals: NutritionTotals, rating: String, ratingReason: String, healthNotes: [String], uncertainty: UncertaintyInfo) {
+        self.isFood = isFood
+        self.foodName = foodName
+        self.foodCategory = foodCategory
+        self.items = items
+        self.totals = totals
+        self.rating = rating
+        self.ratingReason = ratingReason
+        self.healthNotes = healthNotes
+        self.uncertainty = uncertainty
+    }
 }
 
 extension MealAnalysisResponse {
@@ -115,6 +147,7 @@ extension MealAnalysisResponse {
         return MealAnalysisResponse(
             isFood: true,
             foodName: foodName,
+            foodCategory: "other",
             items: [item],
             totals: NutritionTotals(
                 caloriesKcal: calorieEstimate,

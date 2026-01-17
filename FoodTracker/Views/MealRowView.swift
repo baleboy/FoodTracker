@@ -18,12 +18,12 @@ struct MealRowView: View {
                     .frame(width: 60, height: 60)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             } else if meal.photoData == nil {
-                // Text-based entry - show pencil icon
+                // Text-based or voice entry - show food category icon
                 RoundedRectangle(cornerRadius: 8)
                     .fill(.secondary.opacity(0.2))
                     .frame(width: 60, height: 60)
                     .overlay {
-                        Image(systemName: "square.and.pencil")
+                        Image(systemName: meal.foodCategory.iconName)
                             .font(.title2)
                             .foregroundStyle(.secondary)
                     }
