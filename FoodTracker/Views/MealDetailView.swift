@@ -150,6 +150,9 @@ struct MacrosSummaryCard: View {
                     if totals.micros.caffeineMg > 0 {
                         NutrientRow(label: "Caffeine", value: "\(Int(totals.micros.caffeineMg))mg")
                     }
+                    if totals.micros.alcoholStandardDrinks > 0 {
+                        NutrientRow(label: "Alcohol", value: String(format: "%.1f drinks", totals.micros.alcoholStandardDrinks))
+                    }
                 }
             } else {
                 Text("Detailed nutrition data not available")
@@ -267,6 +270,10 @@ struct FoodItemRow: View {
 
                     if item.micros.caffeineMg > 0 {
                         Text("Caffeine: \(Int(item.micros.caffeineMg))mg")
+                    }
+
+                    if item.micros.alcoholStandardDrinks > 0 {
+                        Text("Alcohol: \(String(format: "%.1f", item.micros.alcoholStandardDrinks)) drinks")
                     }
 
                     ConfidenceBar(confidence: item.confidence)

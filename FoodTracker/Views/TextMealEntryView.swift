@@ -19,6 +19,7 @@ struct TextMealEntryView: View {
     @StateObject private var speechRecognizer = SpeechRecognizer()
     @State private var hasSpeechPermission: Bool?
     @FocusState private var isTextFieldFocused: Bool
+    @State private var showingStopFastingConfirmation = false
 
     private var trimmedDescription: String {
         mealDescription.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -117,6 +118,17 @@ struct TextMealEntryView: View {
                     mealDescription = newValue
                 }
             }
+            .alert("Stop Fasting?", isPresented: $showingStopFastingConfirmation) {
+                Button("Stop Fasting") {
+                    FastingSettings.shared.startEatingWindow()
+                    dismiss()
+                }
+                Button("Keep Fasting", role: .cancel) {
+                    dismiss()
+                }
+            } message: {
+                Text("You logged a meal while fasting. Would you like to stop your fast and start your eating window?")
+            }
         }
     }
 
@@ -146,13 +158,17 @@ struct TextMealEntryView: View {
         errorMessage = nil
 
         do {
-            _ = try await MealAnalyzer.analyzeDescriptionAndSave(
+            let result = try await MealAnalyzer.analyzeDescriptionAndSave(
                 description: trimmedDescription,
                 captureDate: nil,
                 modelContext: modelContext
             )
 
-            dismiss()
+            if result.wouldBreakFast {
+                showingStopFastingConfirmation = true
+            } else {
+                dismiss()
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

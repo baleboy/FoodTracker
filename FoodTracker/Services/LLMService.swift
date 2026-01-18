@@ -22,23 +22,26 @@ struct MicroNutrients: Codable, Equatable {
     let cholesterolMg: Double
     let satFatG: Double
     let caffeineMg: Double
+    let alcoholStandardDrinks: Double
 
-    static let zero = MicroNutrients(sodiumMg: 0, cholesterolMg: 0, satFatG: 0, caffeineMg: 0)
+    static let zero = MicroNutrients(sodiumMg: 0, cholesterolMg: 0, satFatG: 0, caffeineMg: 0, alcoholStandardDrinks: 0)
 
-    // Custom decoder to handle missing caffeineMg for backward compatibility
+    // Custom decoder to handle missing fields for backward compatibility
     init(from decoder: Decoder) throws {
         let container = try decoder.container(keyedBy: CodingKeys.self)
         sodiumMg = try container.decode(Double.self, forKey: .sodiumMg)
         cholesterolMg = try container.decode(Double.self, forKey: .cholesterolMg)
         satFatG = try container.decode(Double.self, forKey: .satFatG)
         caffeineMg = try container.decodeIfPresent(Double.self, forKey: .caffeineMg) ?? 0
+        alcoholStandardDrinks = try container.decodeIfPresent(Double.self, forKey: .alcoholStandardDrinks) ?? 0
     }
 
-    init(sodiumMg: Double, cholesterolMg: Double, satFatG: Double, caffeineMg: Double = 0) {
+    init(sodiumMg: Double, cholesterolMg: Double, satFatG: Double, caffeineMg: Double = 0, alcoholStandardDrinks: Double = 0) {
         self.sodiumMg = sodiumMg
         self.cholesterolMg = cholesterolMg
         self.satFatG = satFatG
         self.caffeineMg = caffeineMg
+        self.alcoholStandardDrinks = alcoholStandardDrinks
     }
 }
 

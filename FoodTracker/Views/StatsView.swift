@@ -13,6 +13,7 @@ struct DayStats: Identifiable {
     let calories: Int
     let caloriesBurned: Int?
     let caffeineMg: Int
+    let alcoholDrinks: Double
     let fastingHours: Double
     let metCalorieTarget: Bool
     let metCaffeineTarget: Bool
@@ -95,6 +96,11 @@ struct StatsView: View {
                 total + Int(meal.nutritionData?.totals.micros.caffeineMg ?? 0)
             }
 
+            // Calculate alcohol from nutrition data
+            let alcoholDrinks = dayMeals.reduce(0.0) { total, meal in
+                total + (meal.nutritionData?.totals.micros.alcoholStandardDrinks ?? 0)
+            }
+
             // Calculate intra-day fasting hours
             var fastingHours = FastingCalculator.totalFastingHours(
                 for: dayMeals,
@@ -118,6 +124,7 @@ struct StatsView: View {
                 calories: calories,
                 caloriesBurned: caloriesBurned,
                 caffeineMg: caffeineMg,
+                alcoholDrinks: alcoholDrinks,
                 fastingHours: fastingHours,
                 metCalorieTarget: calories <= settings.calorieTarget && calories > 0,
                 metCaffeineTarget: caffeineMg <= settings.caffeineTarget,
@@ -164,6 +171,14 @@ struct StatsView: View {
 
     private var hasBurnedData: Bool {
         weekStats.contains { $0.caloriesBurned != nil }
+    }
+
+    private var weeklyAlcoholTotal: Double {
+        weekStats.reduce(0) { $0 + $1.alcoholDrinks }
+    }
+
+    private var metAlcoholTarget: Bool {
+        weeklyAlcoholTotal <= Double(settings.alcoholWeeklyTarget)
     }
 
     var body: some View {
@@ -290,6 +305,34 @@ struct StatsView: View {
                     Text("Target: \(settings.caffeineTarget) mg or less")
                         .font(.caption)
                         .foregroundStyle(.secondary)
+                }
+                .padding()
+                .background(Color(.secondarySystemGroupedBackground))
+                .clipShape(RoundedRectangle(cornerRadius: 12))
+
+                VStack(alignment: .leading, spacing: 8) {
+                    Text("Alcohol")
+                        .font(.headline)
+
+                    Chart(weekStats) { stat in
+                        BarMark(
+                            x: .value("Day", stat.dayLabel),
+                            y: .value("Drinks", stat.alcoholDrinks)
+                        )
+                        .foregroundStyle(metAlcoholTarget ? Color.green : Color.red)
+                    }
+                    .chartYAxis {
+                        AxisMarks(position: .leading)
+                    }
+                    .frame(height: 200)
+
+                    HStack {
+                        Text("This week: \(String(format: "%.1f", weeklyAlcoholTotal)) drinks")
+                        Spacer()
+                        Text("Target: \(settings.alcoholWeeklyTarget)/week")
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
                 }
                 .padding()
                 .background(Color(.secondarySystemGroupedBackground))

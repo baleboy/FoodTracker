@@ -24,6 +24,7 @@ struct ComparisonResultView: View {
     @State private var selectedProviders: Set<LLMProvider> = []
     @State private var isLoading = true
     @State private var errorMessage: String?
+    @State private var showingStopFastingConfirmation = false
 
     var body: some View {
         NavigationStack {
@@ -107,6 +108,17 @@ struct ComparisonResultView: View {
             .task {
                 await loadResults()
             }
+            .alert("Stop Fasting?", isPresented: $showingStopFastingConfirmation) {
+                Button("Stop Fasting") {
+                    FastingSettings.shared.startEatingWindow()
+                    dismiss()
+                }
+                Button("Keep Fasting", role: .cancel) {
+                    dismiss()
+                }
+            } message: {
+                Text("You logged a meal while fasting. Would you like to stop your fast and start your eating window?")
+            }
         }
     }
 
@@ -174,18 +186,21 @@ struct ComparisonResultView: View {
             modelContext.insert(preference)
         }
 
-        // If currently fasting and meal has significant calories, start the eating window
+        // Check if this meal would break an active fast
         // Low-calorie items like black coffee don't break the fast
-        if FastingSettings.shared.isFasting && meal.calorieEstimate >= FastingSettings.shared.fastBreakingCalorieThreshold {
-            FastingSettings.shared.startEatingWindow()
-        }
+        let wouldBreakFast = FastingSettings.shared.isFasting &&
+            meal.calorieEstimate >= FastingSettings.shared.fastBreakingCalorieThreshold
 
         // Donate intent so the system can suggest meal capture
         Task {
             try? await CaptureMealIntent().donate()
         }
 
-        dismiss()
+        if wouldBreakFast {
+            showingStopFastingConfirmation = true
+        } else {
+            dismiss()
+        }
     }
 }
 

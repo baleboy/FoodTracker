@@ -125,6 +125,23 @@ struct SettingsView: View {
                 }
             }
 
+            Section("Weekly Targets") {
+                VStack(alignment: .leading, spacing: 4) {
+                    Stepper(
+                        "Alcohol: \(fastingSettings.alcoholWeeklyTarget) drinks",
+                        value: Binding(
+                            get: { Double(fastingSettings.alcoholWeeklyTarget) },
+                            set: { fastingSettings.alcoholWeeklyTarget = Int($0) }
+                        ),
+                        in: 0...28,
+                        step: 1
+                    )
+                    Text("1 standard drink = 12oz beer, 5oz wine, or 1.5oz spirits")
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                }
+            }
+
             Section {
                 VStack(alignment: .leading, spacing: 4) {
                     Stepper(

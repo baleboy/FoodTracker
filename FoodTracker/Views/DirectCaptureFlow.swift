@@ -19,6 +19,7 @@ struct DirectCaptureFlow: View {
     @State private var isAnalyzing = false
     @State private var errorMessage: String?
     @State private var showingComparison = false
+    @State private var showingStopFastingConfirmation = false
 
     private enum CapturePhase {
         case camera
@@ -65,6 +66,17 @@ struct DirectCaptureFlow: View {
         .onReceive(NotificationCenter.default.publisher(for: .cameraCancelled)) { _ in
             onComplete()
         }
+        .alert("Stop Fasting?", isPresented: $showingStopFastingConfirmation) {
+            Button("Stop Fasting") {
+                FastingSettings.shared.startEatingWindow()
+                onComplete()
+            }
+            Button("Keep Fasting", role: .cancel) {
+                onComplete()
+            }
+        } message: {
+            Text("You logged a meal while fasting. Would you like to stop your fast and start your eating window?")
+        }
     }
 
     private var analysisView: some View {
@@ -105,14 +117,18 @@ struct DirectCaptureFlow: View {
         errorMessage = nil
 
         do {
-            _ = try await MealAnalyzer.analyzeAndSave(
+            let result = try await MealAnalyzer.analyzeAndSave(
                 imageData: imageData,
                 captureDate: captureDate,
                 modelContext: modelContext
             )
 
             phase = .done
-            onComplete()
+            if result.wouldBreakFast {
+                showingStopFastingConfirmation = true
+            } else {
+                onComplete()
+            }
         } catch {
             errorMessage = error.localizedDescription
             isAnalyzing = false

@@ -18,6 +18,8 @@ struct PhotoCaptureView: View {
     @State private var errorMessage: String?
     @State private var showingComparison = false
     @State private var hasProcessedInitialImage = false
+    @State private var showingStopFastingConfirmation = false
+    @State private var pendingDismiss = false
 
     var body: some View {
         NavigationStack {
@@ -78,6 +80,17 @@ struct PhotoCaptureView: View {
                     }
                 }
             }
+            .alert("Stop Fasting?", isPresented: $showingStopFastingConfirmation) {
+                Button("Stop Fasting") {
+                    FastingSettings.shared.startEatingWindow()
+                    dismiss()
+                }
+                Button("Keep Fasting", role: .cancel) {
+                    dismiss()
+                }
+            } message: {
+                Text("You logged a meal while fasting. Would you like to stop your fast and start your eating window?")
+            }
         }
     }
 
@@ -88,13 +101,17 @@ struct PhotoCaptureView: View {
         errorMessage = nil
 
         do {
-            _ = try await MealAnalyzer.analyzeAndSave(
+            let result = try await MealAnalyzer.analyzeAndSave(
                 imageData: imageData,
                 captureDate: captureDate,
                 modelContext: modelContext
             )
 
-            dismiss()
+            if result.wouldBreakFast {
+                showingStopFastingConfirmation = true
+            } else {
+                dismiss()
+            }
         } catch {
             errorMessage = error.localizedDescription
         }

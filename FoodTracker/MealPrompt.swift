@@ -26,7 +26,7 @@ Return **ONLY** a single valid JSON object (no markdown, no extra text). Use thi
 "estimatedVolumeML": 0,
 "caloriesKcal": 0,
 "macros": { "proteinG": 0, "carbsG": 0, "fatG": 0, "fiberG": 0, "sugarG": 0 },
-"micros": { "sodiumMg": 0, "cholesterolMg": 0, "satFatG": 0, "caffeineMg": 0 },
+"micros": { "sodiumMg": 0, "cholesterolMg": 0, "satFatG": 0, "caffeineMg": 0, "alcoholStandardDrinks": 0 },
 "confidence": 0.0,
 "evidence": [
 "Short bullet-like phrases describing visual cues used (e.g., 'scale shows 182 g', 'standard 24 cm dinner plate', '12 oz can visible')"
@@ -71,6 +71,7 @@ Rules & guidance:
 * Round grams to nearest 5 g, calories to nearest 10 kcal unless label provides exact values.
 * **isFood detection**: Set isFood to false if the image does not contain any food or drinks (e.g., a person, animal, object, landscape, document). When isFood is false, set foodName to a brief description of what you see (e.g., "a cat", "office supplies", "a car"), set foodCategory to "other", set all nutritional values to 0, use "red" rating, and set ratingReason to explain why this is not food.
 * **Caffeine estimation**: Estimate caffeine content (caffeineMg) for beverages and foods that contain it. Reference values: brewed coffee ~95mg/8oz, espresso ~63mg/shot, black tea ~47mg/8oz, green tea ~28mg/8oz, cola ~34mg/12oz, energy drinks vary (check label if visible), dark chocolate ~12mg/oz. Set to 0 for non-caffeinated items.
+* **Alcohol estimation**: Estimate alcohol content in standard drinks (alcoholStandardDrinks). 1 standard drink = 14g pure alcohol. Reference values: regular beer (5% ABV) 12oz = 1 drink, wine (12% ABV) 5oz = 1 drink, spirits (40% ABV) 1.5oz = 1 drink. For cocktails, estimate based on spirit content (e.g., margarita ~1.5 drinks, long island iced tea ~3-4 drinks). Set to 0 for non-alcoholic items.
 * **foodCategory**: Choose the single best-matching category for the overall meal. Use these guidelines:
   * meat: beef, pork, lamb, game
   * poultry: chicken, turkey, duck
@@ -118,7 +119,7 @@ Return **ONLY** a single valid JSON object (no markdown, no extra text). Use thi
 "estimatedVolumeML": 0,
 "caloriesKcal": 0,
 "macros": { "proteinG": 0, "carbsG": 0, "fatG": 0, "fiberG": 0, "sugarG": 0 },
-"micros": { "sodiumMg": 0, "cholesterolMg": 0, "satFatG": 0, "caffeineMg": 0 },
+"micros": { "sodiumMg": 0, "cholesterolMg": 0, "satFatG": 0, "caffeineMg": 0, "alcoholStandardDrinks": 0 },
 "confidence": 0.0,
 "evidence": [
 "Short bullet-like phrases describing what was mentioned in the description"
@@ -162,6 +163,7 @@ Rules & guidance:
 * Round grams to nearest 5 g, calories to nearest 10 kcal.
 * **isFood detection**: Set isFood to false if the description clearly refers to non-food items. When isFood is false, set foodName to describe what was mentioned, set foodCategory to "other", set all nutritional values to 0, use "red" rating.
 * **Caffeine estimation**: Estimate caffeine content (caffeineMg) for beverages and foods that contain it. Reference values: brewed coffee ~95mg/8oz, espresso ~63mg/shot, black tea ~47mg/8oz, green tea ~28mg/8oz, cola ~34mg/12oz, energy drinks vary, dark chocolate ~12mg/oz. Set to 0 for non-caffeinated items.
+* **Alcohol estimation**: Estimate alcohol content in standard drinks (alcoholStandardDrinks). 1 standard drink = 14g pure alcohol. Reference values: regular beer (5% ABV) 12oz = 1 drink, wine (12% ABV) 5oz = 1 drink, spirits (40% ABV) 1.5oz = 1 drink. For cocktails, estimate based on spirit content (e.g., margarita ~1.5 drinks, long island iced tea ~3-4 drinks). Set to 0 for non-alcoholic items.
 * **foodCategory**: Choose the single best-matching category for the overall meal. Use these guidelines:
   * meat: beef, pork, lamb, game
   * poultry: chicken, turkey, duck

@@ -6,6 +6,13 @@
 import SwiftData
 import AppIntents
 
+/// Result of saving a meal, including whether it would break an active fast.
+struct MealSaveResult {
+    let meal: Meal
+    /// True if the user was fasting and this meal has enough calories to break the fast.
+    let wouldBreakFast: Bool
+}
+
 /// Shared helper for analyzing meals and saving them to the database.
 /// Used by both DirectCaptureFlow and PhotoCaptureView to avoid code duplication.
 enum MealAnalyzer {
@@ -14,13 +21,13 @@ enum MealAnalyzer {
     ///   - imageData: The image data to analyze
     ///   - captureDate: Optional capture date for the meal
     ///   - modelContext: The SwiftData model context to save the meal to
-    /// - Returns: The created and saved Meal
+    /// - Returns: MealSaveResult containing the meal and whether it would break an active fast
     @MainActor
     static func analyzeAndSave(
         imageData: Data,
         captureDate: Date?,
         modelContext: ModelContext
-    ) async throws -> Meal {
+    ) async throws -> MealSaveResult {
         let service = APIKeyManager.shared.createSelectedService()
         let result = try await service.analyzeMeal(imageData: imageData)
 
@@ -36,16 +43,15 @@ enum MealAnalyzer {
 
         modelContext.insert(meal)
 
-        // If currently fasting and meal has significant calories, start the eating window
+        // Check if this meal would break an active fast
         // Low-calorie items like black coffee don't break the fast
-        if FastingSettings.shared.isFasting && meal.calorieEstimate >= FastingSettings.shared.fastBreakingCalorieThreshold {
-            FastingSettings.shared.startEatingWindow()
-        }
+        let wouldBreakFast = FastingSettings.shared.isFasting &&
+            meal.calorieEstimate >= FastingSettings.shared.fastBreakingCalorieThreshold
 
         // Donate intent so the system can suggest meal capture
         try? await CaptureMealIntent().donate()
 
-        return meal
+        return MealSaveResult(meal: meal, wouldBreakFast: wouldBreakFast)
     }
 
     /// Analyzes meal from text description and saves it to the model context.
@@ -53,13 +59,13 @@ enum MealAnalyzer {
     ///   - description: The text description of the meal
     ///   - captureDate: Optional date for the meal (defaults to now)
     ///   - modelContext: The SwiftData model context to save the meal to
-    /// - Returns: The created and saved Meal
+    /// - Returns: MealSaveResult containing the meal and whether it would break an active fast
     @MainActor
     static func analyzeDescriptionAndSave(
         description: String,
         captureDate: Date?,
         modelContext: ModelContext
-    ) async throws -> Meal {
+    ) async throws -> MealSaveResult {
         let service = APIKeyManager.shared.createSelectedService()
         let result = try await service.analyzeMealDescription(description)
 
@@ -75,14 +81,13 @@ enum MealAnalyzer {
 
         modelContext.insert(meal)
 
-        // If currently fasting and meal has significant calories, start the eating window
-        if FastingSettings.shared.isFasting && meal.calorieEstimate >= FastingSettings.shared.fastBreakingCalorieThreshold {
-            FastingSettings.shared.startEatingWindow()
-        }
+        // Check if this meal would break an active fast
+        let wouldBreakFast = FastingSettings.shared.isFasting &&
+            meal.calorieEstimate >= FastingSettings.shared.fastBreakingCalorieThreshold
 
         // Donate intent so the system can suggest meal capture
         try? await CaptureMealIntent().donate()
 
-        return meal
+        return MealSaveResult(meal: meal, wouldBreakFast: wouldBreakFast)
     }
 }

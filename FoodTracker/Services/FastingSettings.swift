@@ -13,6 +13,7 @@ final class FastingSettings: ObservableObject {
     private let fastingTargetKey = "fasting-target-hours"
     private let calorieTargetKey = "calorie-target"
     private let caffeineTargetKey = "caffeine-target"
+    private let alcoholWeeklyTargetKey = "alcohol-weekly-target"
     private let fastBreakingCalorieThresholdKey = "fast-breaking-calorie-threshold"
     private let comparisonModeKey = "comparison-mode-enabled"
     private let eatingWindowStartKey = "eating-window-start"
@@ -23,6 +24,7 @@ final class FastingSettings: ObservableObject {
     private let defaultFastingTarget: Double = 16.0
     private let defaultCalorieTarget: Int = 2000
     private let defaultCaffeineTarget: Int = 400  // FDA recommended max daily intake
+    private let defaultAlcoholWeeklyTarget: Int = 14  // CDC moderate drinking guideline (~2 drinks/day)
     private let defaultFastBreakingCalorieThreshold: Int = 50  // Calories below this don't break fast
 
     @Published var minimumThresholdHours: Double {
@@ -46,6 +48,12 @@ final class FastingSettings: ObservableObject {
     @Published var caffeineTarget: Int {
         didSet {
             UserDefaults.standard.set(caffeineTarget, forKey: caffeineTargetKey)
+        }
+    }
+
+    @Published var alcoholWeeklyTarget: Int {
+        didSet {
+            UserDefaults.standard.set(alcoholWeeklyTarget, forKey: alcoholWeeklyTargetKey)
         }
     }
 
@@ -169,6 +177,9 @@ final class FastingSettings: ObservableObject {
 
         let storedCaffeineTarget = UserDefaults.standard.integer(forKey: caffeineTargetKey)
         self.caffeineTarget = storedCaffeineTarget > 0 ? storedCaffeineTarget : defaultCaffeineTarget
+
+        let storedAlcoholWeeklyTarget = UserDefaults.standard.integer(forKey: alcoholWeeklyTargetKey)
+        self.alcoholWeeklyTarget = storedAlcoholWeeklyTarget > 0 ? storedAlcoholWeeklyTarget : defaultAlcoholWeeklyTarget
 
         let storedFastBreakingThreshold = UserDefaults.standard.integer(forKey: fastBreakingCalorieThresholdKey)
         self.fastBreakingCalorieThreshold = storedFastBreakingThreshold > 0 ? storedFastBreakingThreshold : defaultFastBreakingCalorieThreshold
