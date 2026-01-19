@@ -153,6 +153,13 @@ actor ClaudeAPIService: LLMService {
         do {
             return try JSONDecoder().decode(MealAnalysisResponse.self, from: jsonData)
         } catch {
+            Task { @MainActor in
+                ParseErrorLogger.shared.logParseError(
+                    provider: .claude,
+                    error: error,
+                    rawResponse: cleanedText
+                )
+            }
             throw LLMError.decodingError(error)
         }
     }

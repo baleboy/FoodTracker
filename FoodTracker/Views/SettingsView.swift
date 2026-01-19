@@ -4,10 +4,12 @@
 //
 
 import SwiftUI
+import SwiftData
 import HealthKit
 
 struct SettingsView: View {
     @Environment(\.dismiss) private var dismiss
+    @Query private var parseErrorLogs: [ParseErrorLog]
     @State private var selectedProvider = APIKeyManager.shared.selectedProvider
     @State private var claudeKey = ""
     @State private var openAIKey = ""
@@ -19,6 +21,10 @@ struct SettingsView: View {
     @State private var saveError = false
     @ObservedObject private var fastingSettings = FastingSettings.shared
     @ObservedObject private var healthService = HealthKitService.shared
+
+    private var parseErrorCount: Int {
+        parseErrorLogs.count
+    }
 
     var body: some View {
         Form {
@@ -177,6 +183,17 @@ struct SettingsView: View {
                             .foregroundStyle(.green)
                         Text("Fast, private, no API costs. Requires FoodClassifier.mlmodel.")
                             .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+
+                NavigationLink {
+                    ParseErrorChartView()
+                } label: {
+                    HStack {
+                        Text("Parse Errors")
+                        Spacer()
+                        Text("\(parseErrorCount)")
                             .foregroundStyle(.secondary)
                     }
                 }

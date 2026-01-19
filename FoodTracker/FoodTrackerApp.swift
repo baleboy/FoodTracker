@@ -11,13 +11,25 @@ import SwiftData
 @main
 struct FoodTrackerApp: App {
     @StateObject private var appState = AppState.shared
+    let modelContainer: ModelContainer
+
+    init() {
+        do {
+            modelContainer = try ModelContainer(for: Meal.self, ModelPreference.self, ModelResponseTime.self, ParseErrorLog.self)
+        } catch {
+            fatalError("Failed to create ModelContainer: \(error)")
+        }
+    }
 
     var body: some Scene {
         WindowGroup {
             RootView()
                 .environmentObject(appState)
+                .onAppear {
+                    ParseErrorLogger.shared.setModelContainer(modelContainer)
+                }
         }
-        .modelContainer(for: [Meal.self, ModelPreference.self, ModelResponseTime.self])
+        .modelContainer(modelContainer)
     }
 }
 

@@ -150,6 +150,13 @@ actor OpenAIService: LLMService {
         do {
             return try JSONDecoder().decode(MealAnalysisResponse.self, from: jsonData)
         } catch {
+            Task { @MainActor in
+                ParseErrorLogger.shared.logParseError(
+                    provider: .openAI,
+                    error: error,
+                    rawResponse: cleanedText
+                )
+            }
             throw LLMError.decodingError(error)
         }
     }
