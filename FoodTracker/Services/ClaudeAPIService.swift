@@ -7,10 +7,19 @@ import Foundation
 
 actor ClaudeAPIService: LLMService {
     private let baseURL = "https://api.anthropic.com/v1/messages"
-    private let model = "claude-sonnet-4-20250514"
+    private let model = "claude-sonnet-4-6"
+    private let injectedAPIKey: String?
+
+    init(apiKey: String? = nil) {
+        self.injectedAPIKey = apiKey
+    }
+
+    private func getAPIKey() -> String? {
+        injectedAPIKey ?? APIKeyManager.shared.getAPIKey(for: .claude)
+    }
 
     func analyzeMeal(imageData: Data) async throws -> MealAnalysisResponse {
-        guard let apiKey = APIKeyManager.shared.getAPIKey(for: .claude) else {
+        guard let apiKey = getAPIKey() else {
             throw LLMError.invalidAPIKey
         }
 
@@ -76,7 +85,7 @@ actor ClaudeAPIService: LLMService {
     }
 
     func analyzeMealDescription(_ description: String) async throws -> MealAnalysisResponse {
-        guard let apiKey = APIKeyManager.shared.getAPIKey(for: .claude) else {
+        guard let apiKey = getAPIKey() else {
             throw LLMError.invalidAPIKey
         }
 
