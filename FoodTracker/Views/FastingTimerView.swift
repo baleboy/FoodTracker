@@ -121,6 +121,12 @@ struct FastingTimerView: View {
                 }
                 .font(.title2.bold())
 
+                if let start = settings.fastingStart {
+                    Text("Started: \(Self.timeFormatter.string(from: start))")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+
                 if let target = targetEndTime {
                     Text("Target: \(Self.timeFormatter.string(from: target))")
                         .font(.subheadline)
