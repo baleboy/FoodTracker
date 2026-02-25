@@ -20,6 +20,8 @@ struct ContentView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var selectedPhotoData: Data?
     @State private var cameraImageData: Data?
+    @Environment(\.scenePhase) private var scenePhase
+    @ObservedObject private var fastingSettings = FastingSettings.shared
 
 
     var body: some View {
@@ -115,6 +117,25 @@ struct ContentView: View {
         }
         .sheet(isPresented: $showingVoiceEntry) {
             TextMealEntryView(startWithVoice: true)
+        }
+        .onAppear {
+            checkAutoFasting()
+        }
+        .onChange(of: scenePhase) { _, newPhase in
+            if newPhase == .active {
+                checkAutoFasting()
+            }
+        }
+    }
+
+    private func checkAutoFasting() {
+        guard fastingSettings.autoFastingEnabled else { return }
+        guard fastingSettings.isEating else { return }
+        guard let lastMeal = meals.first else { return }
+
+        let hoursSinceLastMeal = Date().timeIntervalSince(lastMeal.timestamp) / 3600
+        if hoursSinceLastMeal >= fastingSettings.autoFastingDelayHours {
+            fastingSettings.startFasting(at: lastMeal.timestamp)
         }
     }
 }

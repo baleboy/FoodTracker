@@ -16,6 +16,8 @@ final class FastingSettings: ObservableObject {
     private let alcoholWeeklyTargetKey = "alcohol-weekly-target"
     private let fastBreakingCalorieThresholdKey = "fast-breaking-calorie-threshold"
     private let comparisonModeKey = "comparison-mode-enabled"
+    private let autoFastingEnabledKey = "auto-fasting-enabled"
+    private let autoFastingDelayHoursKey = "auto-fasting-delay-hours"
     private let eatingWindowStartKey = "eating-window-start"
     private let fastingStartKey = "fasting-start"
     private let previousEatingWindowStartKey = "previous-eating-window-start"
@@ -26,6 +28,7 @@ final class FastingSettings: ObservableObject {
     private let defaultCaffeineTarget: Int = 400  // FDA recommended max daily intake
     private let defaultAlcoholWeeklyTarget: Int = 14  // CDC moderate drinking guideline (~2 drinks/day)
     private let defaultFastBreakingCalorieThreshold: Int = 50  // Calories below this don't break fast
+    private let defaultAutoFastingDelayHours: Double = 2.0  // Hours after last meal before auto-fasting
 
     @Published var minimumThresholdHours: Double {
         didSet {
@@ -66,6 +69,18 @@ final class FastingSettings: ObservableObject {
     @Published var comparisonModeEnabled: Bool {
         didSet {
             UserDefaults.standard.set(comparisonModeEnabled, forKey: comparisonModeKey)
+        }
+    }
+
+    @Published var autoFastingEnabled: Bool {
+        didSet {
+            UserDefaults.standard.set(autoFastingEnabled, forKey: autoFastingEnabledKey)
+        }
+    }
+
+    @Published var autoFastingDelayHours: Double {
+        didSet {
+            UserDefaults.standard.set(autoFastingDelayHours, forKey: autoFastingDelayHoursKey)
         }
     }
 
@@ -185,6 +200,16 @@ final class FastingSettings: ObservableObject {
         self.fastBreakingCalorieThreshold = storedFastBreakingThreshold > 0 ? storedFastBreakingThreshold : defaultFastBreakingCalorieThreshold
 
         self.comparisonModeEnabled = UserDefaults.standard.bool(forKey: comparisonModeKey)
+
+        // Auto-fasting defaults to enabled; use object(forKey:) to distinguish "never set" from "set to false"
+        if UserDefaults.standard.object(forKey: autoFastingEnabledKey) != nil {
+            self.autoFastingEnabled = UserDefaults.standard.bool(forKey: autoFastingEnabledKey)
+        } else {
+            self.autoFastingEnabled = true
+        }
+
+        let storedAutoFastingDelay = UserDefaults.standard.double(forKey: autoFastingDelayHoursKey)
+        self.autoFastingDelayHours = storedAutoFastingDelay > 0 ? storedAutoFastingDelay : defaultAutoFastingDelayHours
 
         self.previousEatingWindowStart = UserDefaults.standard.object(forKey: previousEatingWindowStartKey) as? Date
 

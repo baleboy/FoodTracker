@@ -95,6 +95,22 @@ struct SettingsView: View {
                     in: 1...24,
                     step: 1
                 )
+
+                Toggle("Auto-start fasting", isOn: $fastingSettings.autoFastingEnabled)
+
+                if fastingSettings.autoFastingEnabled {
+                    VStack(alignment: .leading, spacing: 4) {
+                        Stepper(
+                            "After \(fastingSettings.autoFastingDelayHours, specifier: "%.1f") hours",
+                            value: $fastingSettings.autoFastingDelayHours,
+                            in: 1...6,
+                            step: 0.5
+                        )
+                        Text("Fasting starts automatically from the last meal if no new meal is logged within this time")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
             }
 
             Section("Daily Targets") {
