@@ -110,6 +110,21 @@ struct SettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
+
+                    VStack(alignment: .leading, spacing: 4) {
+                        Stepper(
+                            "Meal duration: \(fastingSettings.mealDurationMinutes) min",
+                            value: Binding(
+                                get: { Double(fastingSettings.mealDurationMinutes) },
+                                set: { fastingSettings.mealDurationMinutes = Int($0) }
+                            ),
+                            in: 0...60,
+                            step: 5
+                        )
+                        Text("Fasting is counted from the end of the meal, not when it was logged")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
                 }
             }
 

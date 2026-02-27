@@ -135,7 +135,9 @@ struct ContentView: View {
 
         let hoursSinceLastMeal = Date().timeIntervalSince(lastMeal.timestamp) / 3600
         if hoursSinceLastMeal >= fastingSettings.autoFastingDelayHours {
-            fastingSettings.startFasting(at: lastMeal.timestamp)
+            let mealDurationOffset = TimeInterval(fastingSettings.mealDurationMinutes * 60)
+            let fastingStartTime = lastMeal.timestamp.addingTimeInterval(mealDurationOffset)
+            fastingSettings.startFasting(at: fastingStartTime)
         }
     }
 }

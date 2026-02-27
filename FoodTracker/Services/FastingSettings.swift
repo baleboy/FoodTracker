@@ -18,6 +18,7 @@ final class FastingSettings: ObservableObject {
     private let comparisonModeKey = "comparison-mode-enabled"
     private let autoFastingEnabledKey = "auto-fasting-enabled"
     private let autoFastingDelayHoursKey = "auto-fasting-delay-hours"
+    private let mealDurationMinutesKey = "meal-duration-minutes"
     private let eatingWindowStartKey = "eating-window-start"
     private let fastingStartKey = "fasting-start"
     private let previousEatingWindowStartKey = "previous-eating-window-start"
@@ -29,6 +30,7 @@ final class FastingSettings: ObservableObject {
     private let defaultAlcoholWeeklyTarget: Int = 14  // CDC moderate drinking guideline (~2 drinks/day)
     private let defaultFastBreakingCalorieThreshold: Int = 50  // Calories below this don't break fast
     private let defaultAutoFastingDelayHours: Double = 2.0  // Hours after last meal before auto-fasting
+    private let defaultMealDurationMinutes: Int = 30  // Assumed meal duration for auto-fasting offset
 
     @Published var minimumThresholdHours: Double {
         didSet {
@@ -81,6 +83,12 @@ final class FastingSettings: ObservableObject {
     @Published var autoFastingDelayHours: Double {
         didSet {
             UserDefaults.standard.set(autoFastingDelayHours, forKey: autoFastingDelayHoursKey)
+        }
+    }
+
+    @Published var mealDurationMinutes: Int {
+        didSet {
+            UserDefaults.standard.set(mealDurationMinutes, forKey: mealDurationMinutesKey)
         }
     }
 
@@ -210,6 +218,9 @@ final class FastingSettings: ObservableObject {
 
         let storedAutoFastingDelay = UserDefaults.standard.double(forKey: autoFastingDelayHoursKey)
         self.autoFastingDelayHours = storedAutoFastingDelay > 0 ? storedAutoFastingDelay : defaultAutoFastingDelayHours
+
+        let storedMealDuration = UserDefaults.standard.integer(forKey: mealDurationMinutesKey)
+        self.mealDurationMinutes = storedMealDuration > 0 ? storedMealDuration : defaultMealDurationMinutes
 
         self.previousEatingWindowStart = UserDefaults.standard.object(forKey: previousEatingWindowStartKey) as? Date
 
