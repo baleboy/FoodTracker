@@ -145,11 +145,7 @@ actor GeminiService: LLMService {
             throw LLMError.invalidResponse
         }
 
-        let cleanedText = jsonText
-            .trimmingCharacters(in: .whitespacesAndNewlines)
-            .replacingOccurrences(of: "```json", with: "")
-            .replacingOccurrences(of: "```", with: "")
-            .trimmingCharacters(in: .whitespacesAndNewlines)
+        let cleanedText = Self.extractJSON(from: jsonText)
 
         guard let jsonData = cleanedText.data(using: .utf8) else {
             throw LLMError.invalidResponse
@@ -167,5 +163,17 @@ actor GeminiService: LLMService {
             }
             throw LLMError.decodingError(error)
         }
+    }
+
+    private static func extractJSON(from text: String) -> String {
+        let trimmed = text.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard let startIndex = trimmed.firstIndex(of: "{"),
+              let endIndex = trimmed.lastIndex(of: "}") else {
+            return trimmed
+                .replacingOccurrences(of: "```json", with: "")
+                .replacingOccurrences(of: "```", with: "")
+                .trimmingCharacters(in: .whitespacesAndNewlines)
+        }
+        return String(trimmed[startIndex...endIndex])
     }
 }

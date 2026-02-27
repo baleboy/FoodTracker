@@ -15,6 +15,23 @@ struct MacroNutrients: Codable, Equatable {
     let sugarG: Double
 
     static let zero = MacroNutrients(proteinG: 0, carbsG: 0, fatG: 0, fiberG: 0, sugarG: 0)
+
+    init(proteinG: Double, carbsG: Double, fatG: Double, fiberG: Double, sugarG: Double) {
+        self.proteinG = proteinG
+        self.carbsG = carbsG
+        self.fatG = fatG
+        self.fiberG = fiberG
+        self.sugarG = sugarG
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        proteinG = try container.decodeIfPresent(Double.self, forKey: .proteinG) ?? 0
+        carbsG = try container.decodeIfPresent(Double.self, forKey: .carbsG) ?? 0
+        fatG = try container.decodeIfPresent(Double.self, forKey: .fatG) ?? 0
+        fiberG = try container.decodeIfPresent(Double.self, forKey: .fiberG) ?? 0
+        sugarG = try container.decodeIfPresent(Double.self, forKey: .sugarG) ?? 0
+    }
 }
 
 struct MicroNutrients: Codable, Equatable {
@@ -59,6 +76,35 @@ struct FoodItem: Codable, Equatable, Identifiable {
     let confidence: Double
     let evidence: [String]
     let assumptions: [String]
+
+    init(name: String, quantity: Double, unit: String, estimatedWeightG: Double, estimatedVolumeML: Double, caloriesKcal: Int, macros: MacroNutrients, micros: MicroNutrients, confidence: Double, evidence: [String], assumptions: [String]) {
+        self.name = name
+        self.quantity = quantity
+        self.unit = unit
+        self.estimatedWeightG = estimatedWeightG
+        self.estimatedVolumeML = estimatedVolumeML
+        self.caloriesKcal = caloriesKcal
+        self.macros = macros
+        self.micros = micros
+        self.confidence = confidence
+        self.evidence = evidence
+        self.assumptions = assumptions
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        name = try container.decode(String.self, forKey: .name)
+        quantity = try container.decodeIfPresent(Double.self, forKey: .quantity) ?? 1
+        unit = try container.decodeIfPresent(String.self, forKey: .unit) ?? "serving"
+        estimatedWeightG = try container.decodeIfPresent(Double.self, forKey: .estimatedWeightG) ?? 0
+        estimatedVolumeML = try container.decodeIfPresent(Double.self, forKey: .estimatedVolumeML) ?? 0
+        caloriesKcal = try container.decode(Int.self, forKey: .caloriesKcal)
+        macros = try container.decodeIfPresent(MacroNutrients.self, forKey: .macros) ?? .zero
+        micros = try container.decodeIfPresent(MicroNutrients.self, forKey: .micros) ?? .zero
+        confidence = try container.decodeIfPresent(Double.self, forKey: .confidence) ?? 0.5
+        evidence = try container.decodeIfPresent([String].self, forKey: .evidence) ?? []
+        assumptions = try container.decodeIfPresent([String].self, forKey: .assumptions) ?? []
+    }
 }
 
 struct NutritionTotals: Codable, Equatable {
