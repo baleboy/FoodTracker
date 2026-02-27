@@ -17,7 +17,6 @@ final class FastingSettings: ObservableObject {
     private let fastBreakingCalorieThresholdKey = "fast-breaking-calorie-threshold"
     private let comparisonModeKey = "comparison-mode-enabled"
     private let autoFastingEnabledKey = "auto-fasting-enabled"
-    private let autoFastingDelayHoursKey = "auto-fasting-delay-hours"
     private let mealDurationMinutesKey = "meal-duration-minutes"
     private let eatingWindowStartKey = "eating-window-start"
     private let fastingStartKey = "fasting-start"
@@ -29,7 +28,6 @@ final class FastingSettings: ObservableObject {
     private let defaultCaffeineTarget: Int = 400  // FDA recommended max daily intake
     private let defaultAlcoholWeeklyTarget: Int = 14  // CDC moderate drinking guideline (~2 drinks/day)
     private let defaultFastBreakingCalorieThreshold: Int = 50  // Calories below this don't break fast
-    private let defaultAutoFastingDelayHours: Double = 2.0  // Hours after last meal before auto-fasting
     private let defaultMealDurationMinutes: Int = 30  // Assumed meal duration for auto-fasting offset
 
     @Published var minimumThresholdHours: Double {
@@ -77,12 +75,6 @@ final class FastingSettings: ObservableObject {
     @Published var autoFastingEnabled: Bool {
         didSet {
             UserDefaults.standard.set(autoFastingEnabled, forKey: autoFastingEnabledKey)
-        }
-    }
-
-    @Published var autoFastingDelayHours: Double {
-        didSet {
-            UserDefaults.standard.set(autoFastingDelayHours, forKey: autoFastingDelayHoursKey)
         }
     }
 
@@ -215,9 +207,6 @@ final class FastingSettings: ObservableObject {
         } else {
             self.autoFastingEnabled = true
         }
-
-        let storedAutoFastingDelay = UserDefaults.standard.double(forKey: autoFastingDelayHoursKey)
-        self.autoFastingDelayHours = storedAutoFastingDelay > 0 ? storedAutoFastingDelay : defaultAutoFastingDelayHours
 
         let storedMealDuration = UserDefaults.standard.integer(forKey: mealDurationMinutesKey)
         self.mealDurationMinutes = storedMealDuration > 0 ? storedMealDuration : defaultMealDurationMinutes

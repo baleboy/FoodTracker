@@ -101,18 +101,6 @@ struct SettingsView: View {
                 if fastingSettings.autoFastingEnabled {
                     VStack(alignment: .leading, spacing: 4) {
                         Stepper(
-                            "After \(fastingSettings.autoFastingDelayHours, specifier: "%.1f") hours",
-                            value: $fastingSettings.autoFastingDelayHours,
-                            in: 1...6,
-                            step: 0.5
-                        )
-                        Text("Fasting starts automatically from the last meal if no new meal is logged within this time")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
-                    }
-
-                    VStack(alignment: .leading, spacing: 4) {
-                        Stepper(
                             "Meal duration: \(fastingSettings.mealDurationMinutes) min",
                             value: Binding(
                                 get: { Double(fastingSettings.mealDurationMinutes) },
